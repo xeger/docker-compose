@@ -9,10 +9,5 @@ module Docker
     def self.new
       Session.new(Shell)
     end
-
-    # Run the command-line interface.
-    def self.cli(argv, out:STDOUT, err:STDERR)
-      raise NotImplementedError
-    end
   end
 end

@@ -25,11 +25,14 @@ describe Docker::Compose::Session do
   describe '#up' do
     it 'runs containers' do
       expect(shell).to receive(:run).with(array_including('up'))
+      expect(shell).to receive(:run).with(array_including('up', '--detached'))
       session.up
+      session.up detached: true
+      session.up detached: false
     end
   end
 
-  describe '#run' do
+  describe '#run!' do
     it 'performs ${ENV} substitution'
   end
 end

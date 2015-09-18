@@ -7,21 +7,44 @@ module Docker::Compose
     end
 
     # Run a command
-    def up
-      out = run("up")
+    def up(**opts)
+      run!("up", **opts)
     end
 
     # Run a command and return its output. Provide one or more command words
     # which are joined with ' ' and passed to the shell.
     # @return [String] output of the command
-    def run(*words, important:true)
-      cmd = []
-      cmd.concat(['--file', @file]) if @file
-      cmd.concat(['--dir', @dir]) if @dir
-      cmd.concat(words)
-      result, output = @shell.run(cmd)
-      (result == 0) || !important || raise(RuntimeError, "#{words.first} failed with status #{result}")
+    def run!(*words, **opts)
+      result, output = @shell.run(prepare(words, opts))
+      (result == 0) || raise(RuntimeError, "#{words.first} failed with status #{result}")
       output
+    end
+
+    private def prepare(words, opts)
+      cmd = []
+      cmd << '--file' << @file if @file
+      cmd << '--dir' << @dir if @dir
+      cmd.concat(words)
+      opts.each do |kw, arg|
+        if kw.length == 1
+          if arg == true
+            cmd << "-#{kw}"
+          elsif arg
+            cmd << "-#{kw} #{arg}"
+          else
+            # false/nil: omit the flag entirely
+          end
+        else
+          if arg == true
+            cmd << "--#{kw}"
+          elsif arg
+            cmd << "--#{kw}=#{arg}"
+          else
+            cmd << "--no-#{kw}"
+          end
+        end
+      end
+      cmd
     end
   end
 end
