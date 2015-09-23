@@ -43,7 +43,7 @@ module Docker::Compose
     private def define
       namespace :docker do
         namespace :compose do
-          desc 'Print bash exports with IP/ports of running containers'
+          desc 'Print bash exports with IP/ports of running services'
           task :env do
             if Rake.application.top_level_tasks.include? 'docker:compose:env'
               # This task is being run as top-level; print some bash export
@@ -59,6 +59,19 @@ module Docker::Compose
               # environment variables for use in-process by other Rake tasks.
               export_env(print:false)
             end
+          end
+
+          desc 'Launch services needed to run this application'
+          task :up do
+            @session.up(detached:true)
+            puts 'Watching logs; you can safely Ctrl+C without disrupting ' \
+                 'containers.'
+            @session.logs
+          end
+
+          desc 'Stop services needed to run this application'
+          task :stop do
+            @session.stop
           end
         end
       end

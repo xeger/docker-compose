@@ -1,4 +1,6 @@
 module Docker::Compose
+  # Uses a Session to discover information about services' IP addresses and
+  # ports as reachable from the host, then
   class Mapper
     # Pattern that matches an "elided" host or port that should be omitted from
     # output, but is needed to identify a specific container and port.
@@ -10,6 +12,11 @@ module Docker::Compose
     BadSubstitution = Class.new(StandardError)
     NoService       = Class.new(RuntimeError)
 
+    # Create an instance of Mapper
+    # @param [Docker::Compose::Session] session
+    # @param [String] host_ip IPv4 address of the host that is publishing
+    #   Docker services (i.e. the `DOCKER_HOST` hostname or IP if you are using
+    #   a non-clustered Docker environment)
     def initialize(session, host_ip)
       @session = session
       @host_ip = host_ip
