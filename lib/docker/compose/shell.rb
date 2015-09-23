@@ -47,12 +47,14 @@ module Docker::Compose
 
     # Run a command consisting of a number of words. Perform no translation or
     # substitution.
+    #
+    # TODO use something better than backticks; capture stderr for debugging
+    #
     # @param [Array] words
     # @return [Array] a pair of Integer exitstatus and String output
     def self.run(words)
       cmd = words.join ' '
-      STDERR.puts "+ #{cmd}"
-      output = `#{cmd}`
+      output = `#{cmd} 2> /dev/null`
       result = $?.exitstatus
       [result, output]
     end

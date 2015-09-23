@@ -2,8 +2,6 @@ require 'yaml'
 
 module Docker::Compose::Future
   module Session
-    BadSubstitution = Class.new(StandardError)
-
     # Pattern that matches an environment substitution in a docker-compose YML
     # file.
     # @see #substitute
@@ -30,9 +28,9 @@ module Docker::Compose::Future
       Dir.chdir(@dir) do
         fn = opts[:file] || @file
         if opts[:file] != false && File.exist?(fn)
-          yml = YAML.load(fn)
+          yml = YAML.load(File.read(fn))
           yml = substitute(yml)
-          temp = Tempfile.new('docker-compose', @dir)
+          temp = Tempfile.new('docker-compose.yml', @dir)
           temp.write(YAML.dump(yml))
           temp.close
           opts = opts.merge(project: project, file: temp.path)
