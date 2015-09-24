@@ -34,7 +34,8 @@ module Docker::Compose
       self.env = {}
       yield self if block_given?
 
-      @session = Docker::Compose::Session.new(dir:dir, file:file)
+      @shell = Docker::Compose::Shell.new(interactive:true)
+      @session = Docker::Compose::Session.new(@shell, dir:dir, file:file)
       @net_info = Docker::Compose::NetInfo.new
 
       define

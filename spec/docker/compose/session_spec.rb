@@ -1,5 +1,5 @@
 describe Docker::Compose::Session do
-  let(:shell) { double(Docker::Compose::Shell) }
+  let(:shell) { double('shell') }
   subject(:session) { described_class.new(shell) }
 
   let(:exitstatus) { 0 }

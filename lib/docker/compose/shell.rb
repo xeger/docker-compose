@@ -1,7 +1,20 @@
+require 'open3'
 require 'shellwords'
 
 module Docker::Compose
-  module Shell
+  # An easy-to-use interface for invoking commands and capturing their output.
+  # Instances of Shell can be interactive, which prints the command's output
+  # to the terminal and also allows the user to interact with the command.
+  class Shell
+    # Create an instance of Shell.
+    # @param [Boolean] interactive if true, stdout/stdin/stderr of the Ruby app
+    #   will be shared with the subprocess; otherwise stdout will be captured,
+    #   stderr will be discarded, and stdin will be unavailable to the
+    #   subprocess.
+    def initialize(interactive:false)
+      @interactive = interactive
+    end
+
     # Run a shell command consisting of one or more words followed by flags and
     # options specified in **opts.
     #
@@ -15,7 +28,7 @@ module Docker::Compose
     # @param [Array] words a list of command words
     # @param [Hash] opts a map of CLI options to append to words
     # @return [Array] a pair of Integer exitstatus and String output
-    def self.command(words, opts)
+    def command(words, opts)
       cmd = words
       opts.each do |kw, arg|
         if kw.length == 1
@@ -50,13 +63,59 @@ module Docker::Compose
     #
     # TODO use something better than backticks; capture stderr for debugging
     #
-    # @param [Array] words
+    # @param [Array] argv command to run; argv[0] is program name
     # @return [Array] a pair of Integer exitstatus and String output
-    def self.run(words)
-      cmd = words.join ' '
-      output = `#{cmd} 2> /dev/null`
-      result = $?.exitstatus
-      [result, output]
+    def run(argv)
+      stdin, stdout, stderr, thr = Open3.popen3(*argv)
+
+      streams = [stdout, stderr]
+
+      if @interactive
+        streams << STDIN
+      else
+        stdin.close
+      end
+
+      output = String.new.force_encoding(Encoding::BINARY)
+
+      until streams.empty? || (streams.length == 1 && streams.first == STDIN)
+        ready, _, _ = IO.select(streams, [], [], 1)
+
+        if ready && ready.include?(STDIN)
+          input = STDIN.readpartial(1_024) rescue nil
+          if input
+            stdin.write(input)
+          else
+            # our own STDIN got closed; proxy to child's stdin
+            stdin.close
+          end
+        end
+
+        if ready && ready.include?(stderr)
+          data = stderr.readpartial(1_024) rescue nil
+          if data
+            STDERR.write(data) if @interactive
+          else
+            streams.delete(stderr)
+          end
+        end
+
+        if ready && ready.include?(stdout)
+          data = stdout.readpartial(1_024) rescue nil
+          if data
+            output << data
+            STDOUT.write(data) if @interactive
+          else
+            streams.delete(stdout)
+          end
+        end
+      end
+
+      # This blocks until the process exits (which probably already happened,
+      # given that we have received EOF on its output streams).
+      status = thr.value.exitstatus
+
+      [status, output]
     end
   end
 end

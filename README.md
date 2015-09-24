@@ -1,8 +1,8 @@
 # Docker::Compose
 
 This is a Ruby OOP wrapper for the [docker-compose](https://github.com/docker/compose)
-command-line tool. It also contains some features that layer nicely on top of
-docker-compose to enhance your productivity.
+container orchestration tool from Docker Inc. It also contains some features that
+layer nicely on top of docker-compose to enhance your productivity.
 
 Distinctive features of this gem:
 
@@ -14,6 +14,8 @@ Distinctive features of this gem:
 2) Environment-variable mapping that allows you to export environment variables
    into your _host_ that point to network services published by containers.
 
+Throughout this documentation we will refer to this gem as `Docker::Compose`
+as opposed to the `docker-compose` tool that this gem wraps.
 
 ## Installation
 
@@ -49,7 +51,7 @@ compose.up(detached:true)
 
 ### Invoking from Rake
 
-Open your Rakefile and add the docker-compose tasks
+Open your Rakefile and add the Docker::Compose tasks.
 
 ```ruby
 require 'docker/compose/rake_tasks'
@@ -66,7 +68,7 @@ functionality. You can `docker:compose:env` to print bash export statements
 for host-to-container environment mapping; you can `docker:compose:up` or
 `docker:compose:stop` to start and stop containers.
 
-Note that the `docker-compose` command is a perfectly valid way to start
+The `docker-compose` command is a perfectly valid way to start
 and stop containers, but the gem provides some env-substitution functionality
 for your YML files that will be built into docker-compose 1.5 but is not
 released yet. If your YML contains `${ENV}` references, i.e. in order to
@@ -143,7 +145,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/docker-compose. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/xeger/docker-compose. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](contributor-covenant.org) code of conduct.
 
 
 ## License
