@@ -1,16 +1,13 @@
 require 'open3'
-require 'shellwords'
 
 module Docker::Compose
   # An easy-to-use interface for invoking commands and capturing their output.
   # Instances of Shell can be interactive, which prints the command's output
   # to the terminal and also allows the user to interact with the command.
   class Shell
+    attr_accessor :interactive
+
     # Create an instance of Shell.
-    # @param [Boolean] interactive if true, stdout/stdin/stderr of the Ruby app
-    #   will be shared with the subprocess; otherwise stdout will be captured,
-    #   stderr will be discarded, and stdin will be unavailable to the
-    #   subprocess.
     def initialize(interactive:false)
       @interactive = interactive
     end
@@ -29,7 +26,11 @@ module Docker::Compose
     # @param [Hash] opts a map of CLI options to append to words
     # @return [Array] a pair of Integer exitstatus and String output
     def command(words, opts)
-      cmd = words
+      # Start the command with stringified words
+      cmd = words.map { |w| w.to_s }
+
+      # Transform opts into golang flags-style command line parameters;
+      # append them to the command.
       opts.each do |kw, arg|
         if kw.length == 1
           if arg == true
@@ -37,7 +38,7 @@ module Docker::Compose
             cmd << "-#{kw}"
           elsif arg
             # truthey: option that has a value
-            cmd << "-#{kw} #{Shellwords.escape(arg)}"
+            cmd << "-#{kw}" << arg
           else
             # falsey: omit boolean flag
           end
@@ -48,14 +49,14 @@ module Docker::Compose
             cmd << "--#{kw}"
           elsif arg
             # truthey: option that has a value
-            cmd << "--#{kw}=#{Shellwords.escape(arg)}"
+            cmd << "--#{kw}=#{arg}"
           else
             # falsey: omit boolean flag
           end
         end
       end
 
-      run(words)
+      run(cmd)
     end
 
     # Run a command consisting of a number of words. Perform no translation or
@@ -116,6 +117,10 @@ module Docker::Compose
       status = thr.value.exitstatus
 
       [status, output]
+    rescue Interrupt
+      # Proxy Ctrl+C to our child process
+      Process.kill('INT', thr.pid) rescue nil
+      raise
     end
   end
 end

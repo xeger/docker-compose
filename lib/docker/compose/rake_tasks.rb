@@ -46,6 +46,8 @@ module Docker::Compose
         namespace :compose do
           desc 'Print bash exports with IP/ports of running services'
           task :env do
+            @shell.interactive = false # suppress crud
+
             if Rake.application.top_level_tasks.include? 'docker:compose:env'
               # This task is being run as top-level; print some bash export
               # statements or usage information depending on whether STDOUT
