@@ -17,9 +17,13 @@ module Docker::Compose
     # @param [String] host_ip IPv4 address of the host that is publishing
     #   Docker services (i.e. the `DOCKER_HOST` hostname or IP if you are using
     #   a non-clustered Docker environment)
-    def initialize(session, host_ip)
+    # @param [Boolean] strict if true, raise BadSubstitution when unrecognized
+    #        syntax is passed to #map; if false, simply return the value without
+    #        substituting anything
+    def initialize(session, host_ip, strict:true)
       @session = session
       @host_ip = host_ip
+      @strict  = strict
     end
 
     # Substitute service hostnames and ports that appear in a URL or a
@@ -54,22 +58,24 @@ module Docker::Compose
         if pair.first =~ ELIDED
           # output only the port
           service = pair.first.gsub(REMOVE_ELIDED, '')
-          port = published_port(service, pair.second)
+          port = published_port(service, pair.last)
           return port.to_s
-        elsif pair.second =~ ELIDED
+        elsif pair.last =~ ELIDED
           # output only the hostname; resolve the port anyway to ensure that
           # the service is running.
           service = pair.first
-          port = pair.second.gsub(REMOVE_ELIDED, '')
+          port = pair.last.gsub(REMOVE_ELIDED, '')
           published_port(service, port)
           return @host_ip
         else
           # output port:hostname pair
-          port = published_port(pair.first, pair.second)
+          port = published_port(pair.first, pair.last)
           return "#{@host_ip}:#{port}"
         end
-      else
+      elsif @strict
         raise BadSubstitution, "Can't understand '#{value}'"
+      else
+        return value
       end
     end
 
@@ -80,7 +86,7 @@ module Docker::Compose
     # @raise [NoService] if service is not up or does not publish port
     # @return [Integer] host port number, or nil if port not published
     def published_port(service, port)
-      result = @session.run!('port', service, port)
+      result = @session.port(service, port)
       Integer(result.split(':').last.gsub("\n", ""))
     rescue RuntimeError
       raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"

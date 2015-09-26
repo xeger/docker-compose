@@ -8,7 +8,7 @@ module Docker
   module Compose
     # Create a new session.
     def self.new
-      Session.new(Shell)
+      Session.new
     end
   end
 end
