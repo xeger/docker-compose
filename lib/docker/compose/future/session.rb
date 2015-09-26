@@ -19,25 +19,41 @@ module Docker::Compose::Future
     # Read docker-compose YML; perform environment variable substitution;
     # write a temp file; invoke run! with the new file; delete the temp
     # file afterward.
-    def run_with_substitution!(*words, **opts)
+    #
+    # This is a complete reimplementation of run! and we only alias the original
+    # to be good citizens.
+    def run_with_substitution!(*cmd)
       temp = nil
       project = File.basename(@dir)
+
+      # Find and purge the 'file' flag if it exists; otherwise assume we will
+      # substitute our default (session) file.
+      fn = nil
+      cmd.each do |item|
+        fn ||= item.delete(:file) if item.is_a?(Hash)
+      end
+      fn ||= @file
 
       # Rewrite YML if the file exists and the file:false "flag" wasn't
       # explicitly passed to us.
       Dir.chdir(@dir) do
-        fn = opts[:file] || @file
-        if opts[:file] != false && File.exist?(fn)
-          yml = YAML.load(File.read(fn))
-          yml = substitute(yml)
-          temp = Tempfile.new('docker-compose.yml', @dir)
-          temp.write(YAML.dump(yml))
-          temp.close
-          opts = opts.merge(project: project, file: temp.path)
-        end
-      end
+        yml = YAML.load(File.read(fn))
+        yml = substitute(yml)
+        temp = Tempfile.new(fn, @dir)
+        temp.write(YAML.dump(yml))
+        temp.close
 
-      run_without_substitution!(*words, **opts)
+        project_opts = {
+          file: temp.path,
+          project: File.basename(@dir)
+        }
+
+        result, output =
+          @shell.command('docker-compose', project_opts, *cmd)
+        (result == 0) || raise(RuntimeError,
+                               "#{cmd.first} failed with status #{result}")
+        output
+      end
     ensure
       temp.unlink if temp
     end

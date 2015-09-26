@@ -25,7 +25,7 @@ module Docker::Compose
     # @return [true] always returns true
     # @raise [RuntimeError] if command fails
     def logs(*services)
-      run!(["logs" + services])
+      run!('logs', services)
       true
     end
 
@@ -42,8 +42,9 @@ module Docker::Compose
     # @raise [RuntimeError] if command fails
     def up(*services,
            detached:false, timeout:10, no_build:false, no_deps:false)
-      run!(*(["up"] + services),
-           d:detached, timeout:timeout, no_build:no_build, no_deps:no_deps)
+      run!('up',
+           {d:detached, timeout:timeout, no_build:no_build, no_deps:no_deps},
+           services)
       true
     end
 
@@ -51,7 +52,16 @@ module Docker::Compose
     # @param [Array] services list of String service names to stop
     # @param [Integer] timeout how long to wait for each service to stop
     def stop(*services, timeout:10)
-      run!(["stop"] + services, timeout:timeout)
+      run!('stop', {timeout:timeout}, services)
+    end
+
+    # Figure out which host a port a given service port has been published to.
+    # @param [String] service name of service from docker-compose.yml
+    # @param [Integer] port number of port
+    # @param [String] protocol 'tcp' or 'udp'
+    # @param [Integer] index of container (if multiple instances running)
+    def port(service, port, protocol:'tcp', index:1)
+      run!('port', {protocol:protocol, index:index}, service, port)
     end
 
     # Determine the installed version of docker-compose.
@@ -60,7 +70,7 @@ module Docker::Compose
     #   otherwise, returns a Hash of component names to version strings
     # @raise [RuntimeError] if command fails
     def version(short:false)
-      result = run!("version", short:short, file:false, dir:false)
+      result = run!('version', short:short, file:false, dir:false)
 
       if short
         result.strip
@@ -74,29 +84,25 @@ module Docker::Compose
       end
     end
 
-    # Run a docker-compose command. This does not validate options or flags;
-    # use with caution!
+    # Run a docker-compose command without validating that the CLI parameters
+    # make sense. Prepend project and file options if suitable.
     #
+    # @see Docker::Compose::Shell#command
+    #
+    # @param [Array] cmd subcommand words and options in the format accepted by
+    #   Shell#command
     # @return [String] output of the command
     # @raise [RuntimeError] if command fails
-    def run!(*words, **opts)
-      cmd = ['docker-compose']
-
-      # HACK:
-      # --file and --project are special: when they occur, they must be passed
-      # to docker-compose BEFORE the command. Remove them from opts and turn
-      # them into words.
-      file = opts.key?(:file) ? opts.delete(:file) : @file
-      project = opts.key?(:project) ? opts.delete(:project) : false
-      cmd << "--file=#{file}" if file
-      cmd << "--project=#{project}" if project
-
-      cmd.concat(words)
+    def run!(*cmd)
+      project_opts = {
+        file: @file
+      }
 
       Dir.chdir(@dir) do
-        result, output = @shell.command(cmd, opts)
+        result, output =
+          @shell.command('docker-compose', project_opts, *cmd)
         (result == 0) || raise(RuntimeError,
-                               "#{words.first} failed with status #{result}")
+                               "#{cmd.first} failed with status #{result}")
         output
       end
     end
