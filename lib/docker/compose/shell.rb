@@ -75,6 +75,8 @@ module Docker::Compose
     # Arrays and simple objects are appended to argv as "bare" words; Hashes
     # are translated to golang flags and then appended to argv.
     #
+    # @return [Array] an (Integer,String,String) triple of exitstatus, stdout and stderr
+    #
     # @example Run docker-compose with complex parameters
     #   command('docker-compose', {file: 'joe.yml'}, 'up', {d:true}, 'mysvc')
     #
@@ -104,7 +106,7 @@ module Docker::Compose
     #
     # @param [Array] argv command to run; argv[0] is program name and the
     #   remaining elements are parameters and flags
-    # @return [Array] a pair of Integer exitstatus and String output
+    # @return [Array] an (Integer,String,String) triple of exitstatus, stdout and stderr
     private def run(argv)
       stdin, stdout, stderr, thr = Open3.popen3(*argv)
 
@@ -117,6 +119,7 @@ module Docker::Compose
       end
 
       output = String.new.force_encoding(Encoding::BINARY)
+      error = String.new.force_encoding(Encoding::BINARY)
 
       until streams.empty? || (streams.length == 1 && streams.first == STDIN)
         ready, _, _ = IO.select(streams, [], [], 1)
@@ -134,6 +137,7 @@ module Docker::Compose
         if ready && ready.include?(stderr)
           data = stderr.readpartial(1_024) rescue nil
           if data
+            error << data
             STDERR.write(data) if @interactive
           else
             streams.delete(stderr)
@@ -155,7 +159,7 @@ module Docker::Compose
       # given that we have received EOF on its output streams).
       status = thr.value.exitstatus
 
-      [status, output]
+      [status, output, error]
     rescue Interrupt
       # Proxy Ctrl+C to our child process
       Process.kill('INT', thr.pid) rescue nil

@@ -99,9 +99,9 @@ module Docker::Compose
       }
 
       Dir.chdir(@dir) do
-        result, output =
+        result, output, error =
           @shell.command('docker-compose', project_opts, *cmd)
-        (result == 0) || raise(Error.new(cmd.first, result, output))
+        (result == 0) || raise(Error.new(cmd.first, result, error))
         output
       end
     end

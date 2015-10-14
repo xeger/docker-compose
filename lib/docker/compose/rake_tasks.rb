@@ -67,14 +67,12 @@ module Docker::Compose
             @shell.interactive = false # suppress useless 'port' output
 
             if Rake.application.top_level_tasks.include? 'docker:compose:env'
-              # This task is being run as top-level; print some bash export
-              # statements or usage information depending on whether STDOUT
-              # is a tty.
-              if STDOUT.tty?
-                print_usage
-              else
-                export_env(print:true)
-              end
+              # This task is being run as top-level task; set process
+              # environment _and_ print bash export commands to stdout.
+              # Also print usage hints if user invoked rake directly vs.
+              # eval'ing it's output
+              print_usage if STDOUT.tty?
+              export_env(print:true)
             else
               # This task is a dependency of something else; just export the
               # environment variables for use in-process by other Rake tasks.
@@ -148,11 +146,8 @@ module Docker::Compose
 
     private def print_usage
       be = 'bundle exec ' if defined?(Bundler)
-      puts "# To export container network locations to your environment:"
-      puts %Q{eval "$(#{be}rake docker:compose:env)"}
-      puts
-      puts '# To learn which environment variables we will export:'
-      puts %Q{echo "$(#{be}rake docker:compose:env)"}
+      puts %Q{# To export these variables to your shell, run:}
+      puts %Q{#   eval "$(#{be}rake docker:compose:env)"}
     end
   end
 end
