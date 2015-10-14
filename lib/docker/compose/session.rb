@@ -101,8 +101,7 @@ module Docker::Compose
       Dir.chdir(@dir) do
         result, output =
           @shell.command('docker-compose', project_opts, *cmd)
-        (result == 0) || raise(RuntimeError,
-                               "#{cmd.first} failed with status #{result}")
+        (result == 0) || raise(Error.new(cmd.first, result, output))
         output
       end
     end
