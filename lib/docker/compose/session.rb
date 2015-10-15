@@ -13,6 +13,8 @@ module Docker::Compose
   # allowed by the docker-compose CLI, and that options are sometimes renamed
   # for clarity, e.g. the "-d" flag always becomes the "detached:" kwarg.
   class Session
+    attr_reader :dir, :file
+
     def initialize(shell=Docker::Compose::Shell.new,
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell
@@ -99,10 +101,9 @@ module Docker::Compose
       }
 
       Dir.chdir(@dir) do
-        result, output =
+        result, output, error =
           @shell.command('docker-compose', project_opts, *cmd)
-        (result == 0) || raise(RuntimeError,
-                               "#{cmd.first} failed with status #{result}")
+        (result == 0) || raise(Error.new(cmd.first, result, error))
         output
       end
     end

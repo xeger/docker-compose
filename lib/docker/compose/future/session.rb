@@ -48,10 +48,10 @@ module Docker::Compose::Future
           project: File.basename(@dir)
         }
 
-        result, output =
+        result, output, error =
           @shell.command('docker-compose', project_opts, *cmd)
-        (result == 0) || raise(RuntimeError,
-                               "#{cmd.first} failed with status #{result}")
+        (result == 0) ||
+          raise(Docker::Compose::Error.new(cmd.first, result, error))
         output
       end
     ensure
