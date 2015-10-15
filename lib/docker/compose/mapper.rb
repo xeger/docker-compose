@@ -20,7 +20,7 @@ module Docker::Compose
     # @param [NetInfo] net_info
     # @yield yields with each substituted (key, value) pair
     def self.map(env, strict:true, session:Session.new, net_info:NetInfo.new)
-      mapper = self.new(session, net_info.host_routable_ip, strict:strict)
+      mapper = self.new(session, net_info.docker_routable_ip, strict:strict)
       env.each_pair do |k, v|
         begin
           v = mapper.map(v)
@@ -33,15 +33,15 @@ module Docker::Compose
 
     # Create an instance of Mapper
     # @param [Docker::Compose::Session] session
-    # @param [String] host_ip IPv4 address of the host that is publishing
-    #   Docker services (i.e. the `DOCKER_HOST` hostname or IP if you are using
-    #   a non-clustered Docker environment)
+    # @param [String] docker_host DNS hostnrame or IPv4 address of the host
+    #   that is publishing Docker services (i.e. the `DOCKER_HOST` hostname or
+    #   IP if you are using a non-clustered Docker environment)
     # @param [Boolean] strict if true, raise BadSubstitution when unrecognized
-    #        syntax is passed to #map; if false, simply return the value without
-    #        substituting anything
-    def initialize(session, host_ip, strict:true)
+    #        syntax is passed to #map; if false, simply return unrecognized
+    #        values without substituting anything
+    def initialize(session, docker_host, strict:true)
       @session = session
-      @host_ip = host_ip
+      @docker_host = docker_host
       @strict  = strict
     end
 
@@ -70,7 +70,7 @@ module Docker::Compose
       if uri && uri.scheme && uri.host
         # absolute URI with scheme, authority, etc
         uri.port = published_port(uri.host, uri.port)
-        uri.host = @host_ip
+        uri.host = @docker_host
         return uri.to_s
       elsif pair.size == 2
         # "host:port" pair; three sub-cases...
@@ -85,11 +85,11 @@ module Docker::Compose
           service = pair.first
           port = pair.last.gsub(REMOVE_ELIDED, '')
           published_port(service, port)
-          return @host_ip
+          return @docker_host
         else
           # output port:hostname pair
           port = published_port(pair.first, pair.last)
-          return "#{@host_ip}:#{port}"
+          return "#{@docker_host}:#{port}"
         end
       elsif @strict
         raise BadSubstitution, "Can't understand '#{value}'"
