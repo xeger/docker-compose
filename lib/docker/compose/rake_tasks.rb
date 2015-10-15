@@ -24,18 +24,18 @@ module Docker::Compose
     # services running inside containers.
     #
     # @see Docker::Compose::Mapper for information about the substitution syntax
-    attr_accessor :env
+    attr_accessor :server_env
 
     # Extra environment variables that should be set before invoking the command
-    # specified for docker:compose:server. These are set _in addition_ to env
-    # (and should be disjoint from env), and do not necessarily need to map the
-    # location of a container; they can be simple extra env values that are
+    # specified for docker:compose:server. These are set _in addition_ to server_env
+    # (and should be disjoint from server_env), and do not necessarily need to map the
+    # location of a container; they are simply extra environment values that are
     # useful to change the server's behavior when it runs in cooperation
     # with containers.
     #
-    # If there is overlap between env and server_env, then keys of server_env
-    # will "win"; they are set last.
-    attr_accessor :server_env
+    # If there is overlap between server_env and extra_server_env, then keys
+    # of extra_server_env will "win"; they are set last.
+    attr_accessor :extra_server_env
 
     # Command to exec on the _host_ when someone invokes docker:compose:server.
     # This is used to start up all containers and then run a server that
@@ -44,17 +44,19 @@ module Docker::Compose
 
     # Construct Rake wrapper tasks for docker-compose. If a block is given,
     # yield self to the block before defining any tasks so their behavior
-    # can be configured by calling #env=, #file= and so forth.
+    # can be configured by calling #server_env=, #file= and so forth.
     def initialize
       self.dir = Rake.application.original_dir
       self.file = 'docker-compose.yml'
-      self.env = {}
       self.server_env = {}
+      self.extra_server_env = {}
       yield self if block_given?
 
       @shell = Docker::Compose::Shell.new
       @session = Docker::Compose::Session.new(@shell, dir:dir, file:file)
       @net_info = Docker::Compose::NetInfo.new
+
+      @shell.interactive = true
 
       define
     end
@@ -71,19 +73,21 @@ module Docker::Compose
               # environment _and_ print bash export commands to stdout.
               # Also print usage hints if user invoked rake directly vs.
               # eval'ing it's output
-              print_usage if STDOUT.tty?
+              print_usage
               export_env(print:true)
             else
               # This task is a dependency of something else; just export the
               # environment variables for use in-process by other Rake tasks.
               export_env(print:false)
             end
+
+            @shell.interactive = true
           end
 
-          desc 'Launch services needed to run this application'
+          desc 'Launch services (ONLY=a,b,...)'
           task :up do
-            @shell.interactive = true # let user see what's happening
-            @session.up(detached:true)
+            only = (ENV['ONLY'] || '').split(',').compact.uniq
+            @session.up(*only, detached:true)
           end
 
           desc 'Tail logs of all running services'
@@ -91,7 +95,7 @@ module Docker::Compose
             @session.logs
           end
 
-          desc 'Stop services needed to run this application'
+          desc 'Stop services'
           task :stop do
             @session.stop
           end
@@ -108,28 +112,17 @@ module Docker::Compose
     # published by docker-compose services. Optionally also print bash export
     # statements so this information can be made available to a user's shell.
     private def export_env(print:)
-      # First, do env substitutions in strict mode; don't catch BadSubstitution
-      # so the caller knows when he has a bogus value
-      mapper = Docker::Compose::Mapper.new(@session,
-                                           @net_info.docker_routable_ip)
-      self.env.each_pair do |k, v|
-        begin
-          v = mapper.map(v)
-          ENV[k] = v
-          print_env(k, v) if print
-        rescue Docker::Compose::Mapper::NoService
-          ENV[k] = nil
-          print_env(k, nil) if print
-        end
+      Docker::Compose::Mapper.map(self.server_env,
+                                  session:@session,
+                                  net_info:@net_info) do |k, v|
+        ENV[k] = v
+        print_env(k, v) if print
       end
 
-      # Next, do server substitutions in non-strict mode since server_env
-      # can contain arbitrary values.
-      mapper = Docker::Compose::Mapper.new(@session,
-                                           @net_info.docker_routable_ip,
-                                           strict:false)
-      self.server_env.each_pair do |k, v|
-        v = mapper.map(v)
+      Docker::Compose::Mapper.map(self.extra_server_env,
+                                  strict:false,
+                                  session:@session,
+                                  net_info:@net_info) do |k, v|
         ENV[k] = v
         print_env(k, v) if print
       end

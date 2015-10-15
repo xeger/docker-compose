@@ -13,6 +13,8 @@ module Docker::Compose
   # allowed by the docker-compose CLI, and that options are sometimes renamed
   # for clarity, e.g. the "-d" flag always becomes the "detached:" kwarg.
   class Session
+    attr_reader :dir, :file
+
     def initialize(shell=Docker::Compose::Shell.new,
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell

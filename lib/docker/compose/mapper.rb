@@ -12,6 +12,25 @@ module Docker::Compose
     BadSubstitution = Class.new(StandardError)
     NoService       = Class.new(RuntimeError)
 
+    # Instantiate a mapper; map some environment variables; yield to caller for
+    # additional processing.
+    #
+    # @param [Boolean] strict
+    # @param [Session] session
+    # @param [NetInfo] net_info
+    # @yield yields with each substituted (key, value) pair
+    def self.map(env, strict:true, session:Session.new, net_info:NetInfo.new)
+      mapper = self.new(session, net_info.host_routable_ip, strict:strict)
+      env.each_pair do |k, v|
+        begin
+          v = mapper.map(v)
+          yield(k, v)
+        rescue NoService
+          yield(k, nil)
+        end
+      end
+    end
+
     # Create an instance of Mapper
     # @param [Docker::Compose::Session] session
     # @param [String] host_ip IPv4 address of the host that is publishing
