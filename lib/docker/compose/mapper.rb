@@ -59,11 +59,41 @@ module Docker::Compose
     # @example map just the port of MySQL on local docker host
     #   map("[db]:3306") # => "13847"
     #
-    # @param [String] value a URI or a host:port pair
+    # @example map an array of database hosts
+    #   map(["[db1]:3306", "[db2]:3306"])
+    #
+    # @param [String,#map] value a URI, host:port pair, or an array of either
+    #
+    # @return [String,Array] the mapped value with container-names and ports substituted
     #
     # @raise [BadSubstitution] if a substitution string can't be parsed
     # @raise [NoService] if service is not up or does not publish port
     def map(value)
+      if value.respond_to?(:map)
+        value.map { |e| map_scalar(e) }
+      else
+        map_scalar(value)
+      end
+    end
+
+    # Figure out which host port a given service's port has been published to,
+    # and/or whether that service is running. Cannot distinguish between the
+    # "service not running" case and the "container port not published" case!
+    #
+    # @raise [NoService] if service is not up or does not publish port
+    # @return [Integer] host port number, or nil if port not published
+    def published_port(service, port)
+      result = @session.port(service, port)
+      Integer(result.split(':').last.gsub("\n", ""))
+    rescue RuntimeError
+      raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
+    end
+
+    # Map a single string, replacing service names with IPs and container ports
+    # with the host ports that they have been mapped to.
+    # @param [String] value
+    # @return [String]
+    private def map_scalar(value)
       uri = URI.parse(value) rescue nil
       pair = value.split(':')
 
@@ -96,19 +126,6 @@ module Docker::Compose
       else
         return value
       end
-    end
-
-    # Figure out which host port a given service's port has been published to,
-    # and/or whether that service is running. Cannot distinguish between the
-    # "service not running" case and the "container port not published" case!
-    #
-    # @raise [NoService] if service is not up or does not publish port
-    # @return [Integer] host port number, or nil if port not published
-    def published_port(service, port)
-      result = @session.port(service, port)
-      Integer(result.split(':').last.gsub("\n", ""))
-    rescue RuntimeError
-      raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
     end
   end
 end

@@ -1,3 +1,4 @@
+require 'json'
 require 'rake/tasklib'
 
 # In case this file is required directly
@@ -115,7 +116,7 @@ module Docker::Compose
       Docker::Compose::Mapper.map(self.server_env,
                                   session:@session,
                                   net_info:@net_info) do |k, v|
-        ENV[k] = v
+        ENV[k] = serialize_for_env(v)
         print_env(k, v) if print
       end
 
@@ -123,8 +124,21 @@ module Docker::Compose
                                   strict:false,
                                   session:@session,
                                   net_info:@net_info) do |k, v|
-        ENV[k] = v
+        ENV[k] = serialize_for_env(v)
         print_env(k, v) if print
+      end
+    end
+
+    # Transform a Ruby value into a String that can be stored in the environment.
+    # This accepts String or Array and returns String or JSON-serialized Array.
+    private def serialize_for_env(v)
+      case v
+      when String
+        v
+      when Array
+        JSON.dump(v)
+      else
+        raise ArgumentError, "Can't represent a #{v.class} in the environment"
       end
     end
 
