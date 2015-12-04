@@ -129,11 +129,12 @@ module Docker::Compose
       end
     end
 
-    # Transform a Ruby value into a String that can be stored in the environment.
-    # This accepts String or Array and returns String or JSON-serialized Array.
+    # Transform a Ruby value into a String that can be stored in the
+    # environment. This accepts nil, String, or Array and returns nil, String
+    # or JSON-serialized Array.
     private def serialize_for_env(v)
       case v
-      when String
+      when String, NilClass
         v
       when Array
         JSON.dump(v)
