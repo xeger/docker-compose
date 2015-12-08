@@ -1,18 +1,16 @@
 # Docker::Compose
 
 This is a Ruby OOP wrapper for the [docker-compose](https://github.com/docker/compose)
-container orchestration tool from Docker Inc. It also contains some features that
-layer nicely on top of docker-compose to enhance your productivity.
+container orchestration tool from Docker Inc. 
 
-Distinctive features of this gem:
-
-1) Simulates environment-variable substitution in the style of docker-compose
-   1.5; sequences such as ${FOO} in your YML will be replaced with the
-   corresponding environment variable. (This feature will go away once 1.5
-   is released.)
-
-2) Environment-variable mapping that allows you to export environment variables
-   into your _host_ that point to network services published by containers.
+In addition to wrapping the CLI, this gem provides an environment-variable mapping 
+featurie that allows you to export environment variables into your _host_ that point
+to network services exposed by containers. This allows you to run an application on
+your host for quicker and easier development, but run all of its architectural
+dependencies -- database, cache, adjacent microservices -- in containers. The
+dependencies can even be running on another machine, e.g. a cloud instance or a
+container cluster, provided your development machine has TCP connectivity on every
+port exposed by a container.  
 
 Throughout this documentation we will refer to this gem as `Docker::Compose`
 as opposed to the `docker-compose` tool that this gem wraps.
@@ -40,8 +38,8 @@ Or install it yourself as:
 ```ruby
 require 'docker/compose'
 
-# Create a new session in Dir.pwd using the file "docker-compose.yml"
-# for fine-grained control over options, see Docker::Compose::Session#new
+# Create a new session in Dir.pwd using the file "docker-compose.yml".
+# For fine-grained control over options, see Docker::Compose::Session#new
 compose = Docker::Compose.new
 
 compose.version
