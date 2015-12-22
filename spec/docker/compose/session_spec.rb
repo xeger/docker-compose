@@ -12,24 +12,17 @@ describe Docker::Compose::Session do
   describe '.new' do
     it 'allows file override' do
       s1 = described_class.new(shell, file: 'foo.yml')
-      expect(shell).to receive(:command).with(array_including('--file=foo.yml'), anything)
+      expect(shell).to receive(:command).with('docker-compose', {file: 'foo.yml'}, anything, anything, anything)
       s1.up
     end
   end
 
   describe '#up' do
     it 'runs containers' do
-      expect(shell).to receive(:command).with(array_including('up'), anything)
-      expect(shell).to receive(:command).with(array_including('up'),hash_including(d:true))
+      expect(shell).to receive(:command).with('docker-compose', anything, 'up', anything, anything)
+      expect(shell).to receive(:command).with('docker-compose', anything, 'up', hash_including(d:true), anything)
       session.up
       session.up detached:true
-    end
-  end
-
-  describe '#run!' do
-    it 'emulates docker-compose 1.5 ${ENV} substitution' do
-      expect(session).to receive(:run_without_substitution!)
-      session.up
     end
   end
 end

@@ -1,5 +1,3 @@
-require 'docker/compose/future/session'
-
 module Docker::Compose
   # A Ruby OOP interface to a docker-compose session. A session is bound to
   # a particular directory and docker-compose file (which are set at initialize
@@ -107,8 +105,5 @@ module Docker::Compose
         output
       end
     end
-
-    # Simulate behaviors from Docker 1.5
-    include Docker::Compose::Future::Session
   end
 end
