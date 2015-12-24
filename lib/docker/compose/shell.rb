@@ -1,4 +1,5 @@
 require 'open3'
+require 'pty'
 
 module Docker::Compose
   # An easy-to-use interface for invoking commands and capturing their output.
@@ -15,8 +16,6 @@ module Docker::Compose
     # a fixed buffer size; the displayed output tends to "lag" behind the
     # actual program, and bytes sent to stdin may not arrive until you send
     # a lot of them!
-    #
-    # TODO: solve pipe buffering issues, perhaps with a pty...
     #
     # @return [Boolean]
     attr_accessor :interactive
@@ -101,15 +100,65 @@ module Docker::Compose
       run(argv)
     end
 
-    # Run a shell command. Perform no translation or substitution. Return
-    # the program's exit status and stdout.
+    # Run a simple command.
+    #
+    # @param [Array] argv list of command words
+    # @return [Array] triple of integer exitstatus, string stdout, and stderr
+    private def run(argv)
+      if self.interactive
+        run_interactive(argv)
+      else
+        run_noninteractive(argv)
+      end
+    end
+
+    # Run a shell command. Use a pty to capture the unbuffered output.
+    #
+    # @param [Array] argv command to run; argv[0] is program name and the
+    #   remaining elements are parameters and flags
+    # @return [Array] an (Integer,String,String) triple of exitstatus, stdout and (empty) stderr
+    private def run_interactive(argv)
+      stdout, stdout_w = PTY.open
+      stdin_r, stdin = IO.pipe
+      stderr, stderr_w = IO.pipe
+      pid = spawn(*argv, in: stdin_r, out: stdout_w, err: stderr_w)
+      stdin_r.close
+      stdout_w.close
+      stderr_w.close
+
+      output, error = run_inner(stdin, stdout, stderr)
+
+      Process.waitpid(pid)
+
+      [$?.exitstatus, output, error]
+    end
+
+    # Run a shell command. Perform no translation or substitution. Use a pipe
+    # to read the output, which may be buffered by the OS. Return the program's
+    # exit status and stdout.
+    #
+    # TODO eliminate interactive path (it can't happen anymore) and move flourishes to run_interactive
     #
     # @param [Array] argv command to run; argv[0] is program name and the
     #   remaining elements are parameters and flags
     # @return [Array] an (Integer,String,String) triple of exitstatus, stdout and stderr
-    private def run(argv)
+    private def run_noninteractive(argv)
       stdin, stdout, stderr, thr = Open3.popen3(*argv)
 
+      output, error = run_inner(stdin, stdout, stderr)
+
+      # This blocks until the process exits (which probably already happened,
+      # given that we have received EOF on its output streams).
+      status = thr.value.exitstatus
+
+      [status, output, error]
+    rescue Interrupt
+      # Proxy Ctrl+C to our child process
+      Process.kill('INT', thr.pid) rescue nil
+      raise
+    end
+
+    private def run_inner(stdin, stdout, stderr)
       streams = [stdout, stderr]
 
       if @interactive
@@ -155,15 +204,7 @@ module Docker::Compose
         end
       end
 
-      # This blocks until the process exits (which probably already happened,
-      # given that we have received EOF on its output streams).
-      status = thr.value.exitstatus
-
-      [status, output, error]
-    rescue Interrupt
-      # Proxy Ctrl+C to our child process
-      Process.kill('INT', thr.pid) rescue nil
-      raise
+      [output, error]
     end
   end
 end
