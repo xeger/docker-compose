@@ -3,10 +3,17 @@ describe Docker::Compose::Session do
   subject(:session) { described_class.new(shell) }
 
   let(:exitstatus) { 0 }
+  let(:status) { double('exit status', to_i: exitstatus) }
   let(:output) { '' }
+  let(:command) { double('command',
+                         status:status,
+                         captured_output:output,
+                         captured_error:'') }
 
   before do
-    allow(shell).to receive(:command).and_return([exitstatus, output])
+    allow(status).to receive(:success?).and_return(exitstatus == 0)
+    allow(shell).to receive(:command).and_return(command)
+    allow(command).to receive(:join).and_return(command)
   end
 
   describe '.new' do

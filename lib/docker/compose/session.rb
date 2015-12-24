@@ -1,3 +1,5 @@
+require 'backticks'
+
 module Docker::Compose
   # A Ruby OOP interface to a docker-compose session. A session is bound to
   # a particular directory and docker-compose file (which are set at initialize
@@ -13,7 +15,7 @@ module Docker::Compose
   class Session
     attr_reader :dir, :file
 
-    def initialize(shell=Docker::Compose::Shell.new,
+    def initialize(shell=Backticks::Runner.new,
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell
       @dir = dir
@@ -89,20 +91,20 @@ module Docker::Compose
     #
     # @see Docker::Compose::Shell#command
     #
-    # @param [Array] cmd subcommand words and options in the format accepted by
-    #   Shell#command
+    # @param [Array] args command-line arguments in the format accepted by
+    #   Backticks::Runner#command
     # @return [String] output of the command
     # @raise [RuntimeError] if command fails
-    def run!(*cmd)
+    def run!(*args)
       project_opts = {
         file: @file
       }
 
       Dir.chdir(@dir) do
-        result, output, error =
-          @shell.command('docker-compose', project_opts, *cmd)
-        (result == 0) || raise(Error.new(cmd.first, result, error))
-        output
+        cmd = @shell.command('docker-compose', project_opts, *args).join
+        status, out, err= cmd.status, cmd.captured_output, cmd.captured_error
+        status.success? || raise(Error.new(args.first, status, err))
+        out
       end
     end
   end

@@ -53,7 +53,7 @@ module Docker::Compose
       self.extra_server_env = {}
       yield self if block_given?
 
-      @shell = Docker::Compose::Shell.new
+      @shell = Backticks::Runner.new
       @session = Docker::Compose::Session.new(@shell, dir:dir, file:file)
       @net_info = Docker::Compose::NetInfo.new
 
