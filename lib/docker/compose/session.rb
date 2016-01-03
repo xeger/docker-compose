@@ -15,7 +15,7 @@ module Docker::Compose
   class Session
     attr_reader :dir, :file
 
-    def initialize(shell=Backticks::Runner.new,
+    def initialize(shell=Backticks::Runner.new(interactive:true),
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell
       @dir = dir
@@ -25,7 +25,7 @@ module Docker::Compose
     # Monitor the logs of one or more containers.
     # @param [Array] services list of String service names to show logs for
     # @return [true] always returns true
-    # @raise [RuntimeError] if command fails
+    # @raise [Error] if command fails
     def logs(*services)
       run!('logs', services)
       true
@@ -41,7 +41,7 @@ module Docker::Compose
     # @param [Boolean] no_deps if true, just run specified services without
     #   running the services that they depend on
     # @return [true] always returns true
-    # @raise [RuntimeError] if command fails
+    # @raise [Error] if command fails
     def up(*services,
            detached:false, timeout:10, no_build:false, no_deps:false)
       run!('up',
@@ -53,6 +53,7 @@ module Docker::Compose
     # Stop running services.
     # @param [Array] services list of String service names to stop
     # @param [Integer] timeout how long to wait for each service to stop
+    # @raise [Error] if command fails
     def stop(*services, timeout:10)
       run!('stop', {timeout:timeout}, services)
     end
@@ -62,6 +63,7 @@ module Docker::Compose
     # @param [Integer] port number of port
     # @param [String] protocol 'tcp' or 'udp'
     # @param [Integer] index of container (if multiple instances running)
+    # @raise [Error] if command fails
     def port(service, port, protocol:'tcp', index:1)
       run!('port', {protocol:protocol, index:index}, service, port)
     end
@@ -69,15 +71,15 @@ module Docker::Compose
     # Determine the installed version of docker-compose.
     # @param [Boolean] short whether to return terse version information
     # @return [String, Hash] if short==true, returns a version string;
-    #   otherwise, returns a Hash of component names to version strings
-    # @raise [RuntimeError] if command fails
+    #   otherwise, returns a Hash of component-name strings to version strings
+    # @raise [Error] if command fails
     def version(short:false)
       result = run!('version', short:short, file:false, dir:false)
 
       if short
         result.strip
       else
-        lines = result.split("\n")
+        lines = result.split(/[\r\n]+/)
         lines.inject({}) do |h, line|
           kv = line.split(/: +/, 2)
           h[kv.first] = kv.last
@@ -94,14 +96,14 @@ module Docker::Compose
     # @param [Array] args command-line arguments in the format accepted by
     #   Backticks::Runner#command
     # @return [String] output of the command
-    # @raise [RuntimeError] if command fails
+    # @raise [Error] if command fails
     def run!(*args)
       project_opts = {
         file: @file
       }
 
       Dir.chdir(@dir) do
-        cmd = @shell.command('docker-compose', project_opts, *args).join
+        cmd = @shell.run('docker-compose', project_opts, *args).join
         status, out, err= cmd.status, cmd.captured_output, cmd.captured_error
         status.success? || raise(Error.new(args.first, status, err))
         out

@@ -4,7 +4,7 @@ This is a Ruby OOP wrapper for the [docker-compose](https://github.com/docker/co
 container orchestration tool from Docker Inc. 
 
 In addition to wrapping the CLI, this gem provides an environment-variable mapping 
-featurie that allows you to export environment variables into your _host_ that point
+feature that allows you to export environment variables into your _host_ that point
 to network services exposed by containers. This allows you to run an application on
 your host for quicker and easier development, but run all of its architectural
 dependencies -- database, cache, adjacent microservices -- in containers. The
