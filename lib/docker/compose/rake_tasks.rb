@@ -43,6 +43,9 @@ module Docker::Compose
     # depends on them and is properly linked to them.
     attr_accessor :server
 
+    # Namespace to define the rake tasks under. Defaults to "docker:compose'.
+    attr_accessor :rake_namespace
+
     # Construct Rake wrapper tasks for docker-compose. If a block is given,
     # yield self to the block before defining any tasks so their behavior
     # can be configured by calling #server_env=, #file= and so forth.
@@ -51,6 +54,7 @@ module Docker::Compose
       self.file = 'docker-compose.yml'
       self.server_env = {}
       self.extra_server_env = {}
+      self.rake_namespace = 'docker:compose'
       yield self if block_given?
 
       @shell = Backticks::Runner.new
@@ -63,48 +67,46 @@ module Docker::Compose
     end
 
     private def define
-      namespace :docker do
-        namespace :compose do
-          desc 'Print bash exports with IP/ports of running services'
-          task :env do
-            @shell.interactive = false # suppress useless 'port' output
+      namespace self.rake_namespace do
+        desc 'Print bash exports with IP/ports of running services'
+        task :env do
+          @shell.interactive = false # suppress useless 'port' output
 
-            if Rake.application.top_level_tasks.include? 'docker:compose:env'
-              # This task is being run as top-level task; set process
-              # environment _and_ print bash export commands to stdout.
-              # Also print usage hints if user invoked rake directly vs.
-              # eval'ing it's output
-              print_usage
-              export_env(print:true)
-            else
-              # This task is a dependency of something else; just export the
-              # environment variables for use in-process by other Rake tasks.
-              export_env(print:false)
-            end
-
-            @shell.interactive = true
+          if Rake.application.top_level_tasks.include? 'docker:compose:env'
+            # This task is being run as top-level task; set process
+            # environment _and_ print bash export commands to stdout.
+            # Also print usage hints if user invoked rake directly vs.
+            # eval'ing it's output
+            print_usage
+            export_env(print:true)
+          else
+            # This task is a dependency of something else; just export the
+            # environment variables for use in-process by other Rake tasks.
+            export_env(print:false)
           end
 
-          desc 'Launch services (ONLY=a,b,...)'
-          task :up do
-            only = (ENV['ONLY'] || '').split(',').compact.uniq
-            @session.up(*only, detached:true)
-          end
+          @shell.interactive = true
+        end
 
-          desc 'Tail logs of all running services'
-          task :logs do
-            @session.logs
-          end
+        desc 'Launch services (ONLY=a,b,...)'
+        task :up do
+          only = (ENV['ONLY'] || '').split(',').compact.uniq
+          @session.up(*only, detached:true)
+        end
 
-          desc 'Stop services'
-          task :stop do
-            @session.stop
-          end
+        desc 'Tail logs of all running services'
+        task :logs do
+          @session.logs
+        end
 
-          desc 'Run application on the host, linked to services in containers'
-          task :server => ['docker:compose:up', 'docker:compose:env'] do
-            exec(self.server)
-          end
+        desc 'Stop services'
+        task :stop do
+          @session.stop
+        end
+
+        desc 'Run application on the host, linked to services in containers'
+        task :server => ['docker:compose:up', 'docker:compose:env'] do
+          exec(self.server)
         end
       end
     end
