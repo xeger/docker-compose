@@ -103,8 +103,8 @@ module Docker::Compose
       }
 
       Dir.chdir(@dir) do
-        cmd = @shell.run('docker-compose', project_opts, *args).join
-        status, out, err= cmd.status, cmd.captured_output, cmd.captured_error
+        cmd = @shell.command('docker-compose', project_opts, *args).join
+        status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
         status.success? || raise(Error.new(args.first, status, err))
         out
       end
