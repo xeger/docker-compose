@@ -1,5 +1,6 @@
 require 'json'
 require 'rake/tasklib'
+require 'shellwords'
 
 # In case this file is required directly
 require 'docker/compose'
@@ -119,7 +120,7 @@ module Docker::Compose
                                   session:@session,
                                   net_info:@net_info) do |k, v|
         ENV[k] = serialize_for_env(v)
-        print_env(k, v) if print
+        print_env(k, ENV[k]) if print
       end
 
       Docker::Compose::Mapper.map(self.extra_server_env,
@@ -127,7 +128,7 @@ module Docker::Compose
                                   session:@session,
                                   net_info:@net_info) do |k, v|
         ENV[k] = serialize_for_env(v)
-        print_env(k, v) if print
+        print_env(k, ENV[k]) if print
       end
     end
 
@@ -136,10 +137,12 @@ module Docker::Compose
     # or JSON-serialized Array.
     private def serialize_for_env(v)
       case v
-      when String, NilClass
-        v
+      when String
+        Shellwords.escape v
+      when NilClass
+        nil
       when Array
-        JSON.dump(v)
+        Shellwords.escape JSON.dump(v)
       else
         raise ArgumentError, "Can't represent a #{v.class} in the environment"
       end
