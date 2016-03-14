@@ -138,11 +138,11 @@ module Docker::Compose
     private def serialize_for_env(v)
       case v
       when String
-        Shellwords.escape v
+        v
       when NilClass
         nil
       when Array
-        Shellwords.escape JSON.dump(v)
+        JSON.dump(v)
       else
         raise ArgumentError, "Can't represent a #{v.class} in the environment"
       end
@@ -151,7 +151,7 @@ module Docker::Compose
     # Print a bash export or unset statement
     private def print_env(k, v)
       if v
-        puts format('export %s=%s', k, v)
+        puts format('export %s=%s', k, Shellwords.escape(v))
       else
         puts format('unset %s # service not running', k)
       end
