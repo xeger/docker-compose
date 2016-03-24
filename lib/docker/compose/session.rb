@@ -31,7 +31,7 @@ module Docker::Compose
       true
     end
 
-    # Idempotently run services in the project,
+    # Idempotently up the given services in the project.
     # @param [Array] services list of String service names to run
     # @param [Boolean] detached if true, to start services in the background;
     #   otherwise, monitor logs in the foreground and shutdown on Ctrl+C
@@ -48,6 +48,22 @@ module Docker::Compose
            {d:detached, timeout:timeout, no_build:no_build, no_deps:no_deps},
            services)
       true
+    end
+
+    # Idempotently run a service in the project.
+    # @param [String] service name to run
+    # @param [String] cmd command statement to run
+    # @param [Boolean] detached if true, to start services in the background;
+    #   otherwise, monitor logs in the foreground and shutdown on Ctrl+C
+    # @param [Boolean] no_deps if true, just run specified services without
+    #   running the services that they depend on
+    # @param [Array] env_vars a list of environment variables (see: -e flag)
+    # @param [Boolean] rm remove the container when done
+    # @raise [Error] if command fails
+    def run(service, *cmd, detached:false, no_deps:false, env_vars:[], rm:false)
+      formated_vars = env_vars.map{|v| {e: v}}
+      run!('run',
+           {d:detached, no_deps:no_deps, rm:rm}, *formated_vars, service, cmd)
     end
 
     # Stop running services.
