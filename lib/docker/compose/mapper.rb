@@ -20,7 +20,19 @@ module Docker::Compose
     # @param [NetInfo] net_info
     # @yield yields with each substituted (key, value) pair
     def self.map(env, strict:true, session:Session.new, net_info:NetInfo.new)
-      mapper = self.new(session, net_info.docker_routable_ip, strict:strict)
+      # TODO: encapsulate this trickiness better ... inside NetInfo perhaps?
+      docker_host = ENV['DOCKER_HOST']
+      if docker_host.nil? || docker_host =~ /^(\/|unix|file)/
+        # If DOCKER_HOST is blank, or pointing to a local socket, then we
+        # can trust the address information returned by `docker-compose port`.
+        override_host = nil
+      else
+        # If DOCKER_HOST is present, assume that containers have bound to
+        # whatever IP we reach it at; don't fall victim to dirty NAT lies!
+        override_host = net_info.docker_routable_ip
+      end
+
+      mapper = self.new(session, override_host, strict:strict)
       env.each_pair do |k, v|
         begin
           v = mapper.map(v)
@@ -33,15 +45,14 @@ module Docker::Compose
 
     # Create an instance of Mapper
     # @param [Docker::Compose::Session] session
-    # @param [String] docker_host DNS hostnrame or IPv4 address of the host
-    #   that is publishing Docker services (i.e. the `DOCKER_HOST` hostname or
-    #   IP if you are using a non-clustered Docker environment)
+    # @param [String] override_host forcible address or DNS hostname to use;
+    #   leave nil to trust docker-compose output.
     # @param [Boolean] strict if true, raise BadSubstitution when unrecognized
     #        syntax is passed to #map; if false, simply return unrecognized
     #        values without substituting anything
-    def initialize(session, docker_host, strict:true)
+    def initialize(session, override_host=nil, strict:true)
       @session = session
-      @docker_host = docker_host
+      @override_host = override_host
       @strict  = strict
     end
 
@@ -81,10 +92,12 @@ module Docker::Compose
     # "service not running" case and the "container port not published" case!
     #
     # @raise [NoService] if service is not up or does not publish port
-    # @return [Integer] host port number, or nil if port not published
-    def published_port(service, port)
-      result = @session.port(service, port)
-      Integer(result.split(':').last.gsub("\n", ""))
+    # @return [Array] (String, Integer) pair of host address and port number
+    def host_and_port(service, port)
+      result = @session.port(service, port).chomp
+      host, port = result.split(':')
+      host = @override_host if @override_host
+      [host, port]
     rescue RuntimeError
       raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
     end
@@ -99,27 +112,26 @@ module Docker::Compose
 
       if uri && uri.scheme && uri.host
         # absolute URI with scheme, authority, etc
-        uri.port = published_port(uri.host, uri.port)
-        uri.host = @docker_host
+        uri.host, uri.port = host_and_port(uri.host, uri.port)
         return uri.to_s
       elsif pair.size == 2
         # "host:port" pair; three sub-cases...
         if pair.first =~ ELIDED
           # output only the port
           service = pair.first.gsub(REMOVE_ELIDED, '')
-          port = published_port(service, pair.last)
+          _, port = host_and_port(service, pair.last)
           return port.to_s
         elsif pair.last =~ ELIDED
           # output only the hostname; resolve the port anyway to ensure that
           # the service is running.
           service = pair.first
           port = pair.last.gsub(REMOVE_ELIDED, '')
-          published_port(service, port)
-          return @docker_host
+          host, _ = host_and_port(service, port)
+          return host
         else
           # output port:hostname pair
-          port = published_port(pair.first, pair.last)
-          return "#{@docker_host}:#{port}"
+          host, port = host_and_port(pair.first, pair.last)
+          return "#{host}:#{port}"
         end
       elsif @strict
         raise BadSubstitution, "Can't understand '#{value}'"
