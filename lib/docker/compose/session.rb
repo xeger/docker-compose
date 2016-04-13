@@ -1,4 +1,5 @@
 require 'backticks'
+require 'yaml'
 
 module Docker::Compose
   # A Ruby OOP interface to a docker-compose session. A session is bound to
@@ -20,6 +21,14 @@ module Docker::Compose
       @shell = shell
       @dir = dir
       @file = file
+    end
+
+    # Validate docker-compose file and return it as Hash
+    # @return [Hash] the docker-compose config file
+    # @raise [Error] if command fails
+    def config(*args)
+      config = run!('config', *args)
+      YAML.load(config)
     end
 
     # Monitor the logs of one or more containers.
