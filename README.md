@@ -7,7 +7,7 @@ In addition to wrapping the CLI, this gem provides an environment-variable mappi
 feature that allows you to export environment variables into your _host_ that point
 to network services exposed by containers. This allows you to run an application on
 your host for quicker and easier development, but run all of its architectural
-dependencies -- database, cache, adjacent microservices -- in containers. The
+dependencies -- database, cache, adjacent services -- in containers. The
 dependencies can even be running on another machine, e.g. a cloud instance or a
 container cluster, provided your development machine has TCP connectivity on every
 port exposed by a container.  
@@ -62,29 +62,26 @@ end
 ```
 
 Notice that `rake -T` now has a few additional tasks for invoking gem
-functionality. You can `docker:compose:env` to print bash export statements
-for host-to-container environment mapping; you can `docker:compose:up` or
-`docker:compose:stop` to start and stop containers.
+functionality. You can `docker:compose:env` print shell exports for
+host-to-container environment mapping, or you can `docker:compose:host[foo]`.
 
-The `docker-compose` command is a perfectly valid way to start
-and stop containers, but the gem provides some env-substitution functionality
-for your YML files that will be built into docker-compose 1.5 but is not
-released yet. If your YML contains `${ENV}` references, i.e. in order to
-point your containers at network services running on the host, then you must
-invoke docker-compose through Rake in order to peform the substitution.
+### Hosting a Command
+
+To run a process on your host and allow it to talk to containers, use
+the `docker:compose:host` task. For example, I could enter a shell
+with `rake docker:compose:host[bash]`.
+
+Before "hosting" your command, the Rake task export ssome environment
+variables that your command can use to discover services running in
+containers. Your Rakefile specifies which variables your app needs
+(the `host_env` option) and which container information each variable should
+map to.
+
+By hosting commands, you benefit from easier debugging and code editing of
+the app you're working on, but still get to rely on containers to provide
+the companion services your app requires to run.
 
 ### Mapping container IPs and ports
-
-Assuming that your app accepts its configuration in the form of environment
-variables, you can use the `docker:compose:env` to export environment values
-into your bash shell that point to services running inside containers. This
-allows you to run the app on your host (for easier debugging and code editing)
-but let it communicate with services running inside containers.
-
-Docker::Compose uses a heuristic to figure out which IP your services
-are actually reachable at; the heuristic works regardless whether you are
-running "bare" docker daemon on localhost, communicating with a docker-machine
-instance, or even using a cloud-hosted docker machine!
 
 As a trivial example, let's say that your `docker-compose.yml` contains one
 service, the database that your app needs in order to run.
@@ -101,35 +98,50 @@ db:
 ```
 
 Your app needs two inputs, `DATABASE_HOST` and `DATABASE_PORT`. You can specify
-this in the env section of the Rake task:
+this with the host_env option of the Rake task:
 
 ```ruby
 Docker::Compose::RakeTasks.new do |tasks|
-    tasks.env = {
-        'DATABASE_HOST' => 'db:[3306]'
-        'DATABASE_PORT' => '[db]:3306'
+    tasks.host_env = {
+        'DATABASE_HOST' => 'db:[3306]',
+        'DATABASE_PORT' => '[db]:3306',
     }
 end
 ```
-
-(If I had a `DATABASE_URL` input, I could provide a URL such as
-`mysql://db/myapp_development`; Docker::Compose would parse the URL and replace
-the hostname and port appropriately.)
 
 Now, I can run my services, ask Docker::Compose to map the environment values
 to the actual IP and port that `db` has been published to, and run my app:
 
 ```bash
+# First, bring up the containers we will be interested in
 user@machine$ docker-compose up -d
 
-# This prints bash code resembling the following:
-#   export DATABASE_HOST=127.0.0.1
-#   export DATABASE_PORT=34387
+# The rake task prints bash code resembling the following:
+#   export DATABASE_HOST='127.0.0.1'
+#   export DATABASE_PORT='34387'
 # We eval it, which makes the variables available to our shell and to all
 # subprocesses.
 user@machine$ eval "$(bundle exec rake docker:compose:env)"
 
 user@machine$ bundle exec rackup
+```
+
+The `host_env` option also handles substitution of URLs, and arrays of values
+(which are serialized back to the environment as JSON)
+For example:
+
+```ruby
+tasks.host_env = {
+  'DATABASE_URL' => 'mysql://db:3306/myapp_development',
+  'MIXED_FRUIT' => ['db:[3306]', '[db]:3306']
+}
+```
+
+This would result in the following exports:
+
+```bash
+export DATABASE_URL='mysql://127.0.0.1:34387/myapp_development'
+export MIXED_FRUIT='["127.0.0.1", "34387"]'
 ```
 
 To learn more about mapping, read the class documentation for
