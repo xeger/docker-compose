@@ -5,6 +5,9 @@ require 'shellwords'
 # In case this file is required directly
 require 'docker/compose'
 
+# Only used here, so only required here
+require 'docker/compose/shell_printer'
+
 module Docker::Compose
   class RakeTasks < Rake::TaskLib
     # Set the directory in which docker-compose commands will be run. Default
@@ -17,32 +20,33 @@ module Docker::Compose
     # @return [String]
     attr_accessor :file
 
-    # Provide a mapping of environment variables that should be set in the
-    # _host_ shell for docker:compose:env or docker:compose:server.
+    # Provide a mapping of environment variables that should be set in
+    # _host_ processes, e.g. when running docker:compose:env or
+    # docker:compose:host.
+    #
     # The values of the environment variables can refer to names of services
-    # and ports defined in the docker-compose file, and this gem will query
-    # docker-compose to find out which host IP and port the services are
-    # reachable on. This allows components running on the host to connect to
-    # services running inside containers.
+    # and ports defined in the docker-compose file, and this gem will substitute
+    # the actual IP and port that the containers are reachable on. This allows
+    # commands invoked via "docker:compose:host" to reach services running
+    # inside containers.
     #
     # @see Docker::Compose::Mapper for information about the substitution syntax
-    attr_accessor :server_env
+    attr_accessor :host_env
 
-    # Extra environment variables that should be set before invoking the command
-    # specified for docker:compose:server. These are set _in addition_ to server_env
-    # (and should be disjoint from server_env), and do not necessarily need to map the
-    # location of a container; they are simply extra environment values that are
-    # useful to change the server's behavior when it runs in cooperation
-    # with containers.
+    # Extra environment variables to set before invoking host processes. These
+    # are set _in addition_ to server_env, but are not substituted in any way
+    # and must not contain any service information.
     #
-    # If there is overlap between server_env and extra_server_env, then keys
-    # of extra_server_env will "win"; they are set last.
-    attr_accessor :extra_server_env
+    # Extra host env should be disjoint from host_env; if there is overlap
+    # between the two, then extra_host_env will "win."
+    attr_accessor :extra_host_env
 
-    # Command to exec on the _host_ when someone invokes docker:compose:server.
-    # This is used to start up all containers and then run a server that
-    # depends on them and is properly linked to them.
-    attr_accessor :server
+    # Services to bring up with `docker-compose up` before running any hosted
+    # command. This is useful if your `docker-compose.yml` contains a service
+    # definition for the app you will be hosting; if you host the app, you
+    # want to specify all of the _other_ services, but not the app itself, since
+    # that will run on the host.
+    attr_accessor :host_services
 
     # Namespace to define the rake tasks under. Defaults to "docker:compose'.
     attr_accessor :rake_namespace
@@ -53,14 +57,15 @@ module Docker::Compose
     def initialize
       self.dir = Rake.application.original_dir
       self.file = 'docker-compose.yml'
-      self.server_env = {}
-      self.extra_server_env = {}
+      self.host_env = {}
+      self.extra_host_env = {}
       self.rake_namespace = 'docker:compose'
       yield self if block_given?
 
       @shell = Backticks::Runner.new
       @session = Docker::Compose::Session.new(@shell, dir:dir, file:file)
       @net_info = Docker::Compose::NetInfo.new
+      @shell_printer = Docker::Compose::ShellPrinter.new
 
       @shell.interactive = true
 
@@ -73,41 +78,22 @@ module Docker::Compose
         task :env do
           @shell.interactive = false # suppress useless 'port' output
 
-          if Rake.application.top_level_tasks.include? 'docker:compose:env'
-            # This task is being run as top-level task; set process
-            # environment _and_ print bash export commands to stdout.
-            # Also print usage hints if user invoked rake directly vs.
-            # eval'ing it's output
-            print_usage
-            export_env(print:true)
-          else
-            # This task is a dependency of something else; just export the
-            # environment variables for use in-process by other Rake tasks.
-            export_env(print:false)
-          end
+          print_usage if STDOUT.tty?
+          export_env(print:true)
 
           @shell.interactive = true
         end
 
-        desc 'Launch services (ONLY=a,b,...)'
-        task :up do
-          only = (ENV['ONLY'] || '').split(',').compact.uniq
-          @session.up(*only, detached:true)
-        end
+        desc 'Run command on host, linked to services in containers'
+        task :host, [:command] => ['docker:compose:env'] do |task, args|
 
-        desc 'Tail logs of all running services'
-        task :logs do
-          @session.logs
-        end
+          if self.host_services
+            @session.up(*self.host_services, detached:true)
+          else
+            @session.up(detached:true)
+          end
 
-        desc 'Stop services'
-        task :stop do
-          @session.stop
-        end
-
-        desc 'Run application on the host, linked to services in containers'
-        task :server => ['docker:compose:up', 'docker:compose:env'] do
-          exec(self.server)
+          exec(args[:command])
         end
       end
     end
@@ -116,17 +102,14 @@ module Docker::Compose
     # published by docker-compose services. Optionally also print bash export
     # statements so this information can be made available to a user's shell.
     private def export_env(print:)
-      Docker::Compose::Mapper.map(self.server_env,
+      Docker::Compose::Mapper.map(self.host_env,
                                   session:@session,
                                   net_info:@net_info) do |k, v|
         ENV[k] = serialize_for_env(v)
         print_env(k, ENV[k]) if print
       end
 
-      Docker::Compose::Mapper.map(self.extra_server_env,
-                                  strict:false,
-                                  session:@session,
-                                  net_info:@net_info) do |k, v|
+      self.extra_host_env.each do |k, v|
         ENV[k] = serialize_for_env(v)
         print_env(k, ENV[k]) if print
       end
@@ -148,19 +131,21 @@ module Docker::Compose
       end
     end
 
-    # Print a bash export or unset statement
+    # Print an export or unset statement suitable for user's shell
     private def print_env(k, v)
       if v
-        puts format('export %s=%s', k, Shellwords.escape(v))
+        puts @shell_printer.export(k, v)
       else
-        puts format('unset %s # service not running', k)
+        puts @shell_printer.unset(k)
       end
     end
 
+
     private def print_usage
-      be = 'bundle exec ' if defined?(Bundler)
-      puts %Q{# To export these variables to your shell, run:}
-      puts %Q{#   eval "$(#{be}rake docker:compose:env)"}
+      command = "rake #{rake_namespace}:env"
+      command = "bundle exec " + command if defined?(Bundler)
+      puts @shell_printer.comment('To export these variables to your shell, run:')
+      puts @shell_printer.comment(@shell_printer.eval_output(command))
     end
   end
 end

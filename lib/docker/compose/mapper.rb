@@ -15,11 +15,10 @@ module Docker::Compose
     # Instantiate a mapper; map some environment variables; yield to caller for
     # additional processing.
     #
-    # @param [Boolean] strict
     # @param [Session] session
     # @param [NetInfo] net_info
     # @yield yields with each substituted (key, value) pair
-    def self.map(env, strict:true, session:Session.new, net_info:NetInfo.new)
+    def self.map(env, session:Session.new, net_info:NetInfo.new)
       # TODO: encapsulate this trickiness better ... inside NetInfo perhaps?
       docker_host = ENV['DOCKER_HOST']
       if docker_host.nil? || docker_host =~ /^(\/|unix|file)/
@@ -32,7 +31,7 @@ module Docker::Compose
         override_host = net_info.docker_routable_ip
       end
 
-      mapper = self.new(session, override_host, strict:strict)
+      mapper = self.new(session, override_host)
       env.each_pair do |k, v|
         begin
           v = mapper.map(v)
@@ -47,13 +46,9 @@ module Docker::Compose
     # @param [Docker::Compose::Session] session
     # @param [String] override_host forcible address or DNS hostname to use;
     #   leave nil to trust docker-compose output.
-    # @param [Boolean] strict if true, raise BadSubstitution when unrecognized
-    #        syntax is passed to #map; if false, simply return unrecognized
-    #        values without substituting anything
-    def initialize(session, override_host=nil, strict:true)
+    def initialize(session, override_host=nil)
       @session = session
       @override_host = override_host
-      @strict  = strict
     end
 
     # Substitute service hostnames and ports that appear in a URL or a
@@ -133,10 +128,8 @@ module Docker::Compose
           host, port = host_and_port(pair.first, pair.last)
           return "#{host}:#{port}"
         end
-      elsif @strict
-        raise BadSubstitution, "Can't understand '#{value}'"
       else
-        return value
+        raise BadSubstitution, "Can't understand '#{value}'"
       end
     end
   end
