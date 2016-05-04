@@ -78,8 +78,14 @@ module Docker::Compose
         task :env do
           @shell.interactive = false # suppress useless 'port' output
 
-          print_usage if STDOUT.tty?
-          export_env(print:true)
+          tty = STDOUT.tty?
+          tlt = Rake.application.top_level_tasks.include?('docker:compose:env')
+
+          # user invoked this task directly; print some helpful tips on
+          # how we intend it to be used.
+          print_usage if tty && tlt
+
+          export_env(print:tlt)
 
           @shell.interactive = true
         end
