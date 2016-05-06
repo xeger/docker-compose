@@ -93,7 +93,7 @@ module Docker::Compose
       host, port = result.split(':')
       host = @override_host if @override_host
       [host, Integer(port)]
-    rescue RuntimeError
+    rescue RuntimeError, TypeError
       raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
     end
 
