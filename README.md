@@ -6,11 +6,10 @@ container orchestration tool from Docker Inc.
 In addition to wrapping the CLI, this gem provides an environment-variable mapping 
 feature that allows you to export environment variables into your _host_ that point
 to network services exposed by containers. This allows you to run an application on
-your host for quicker and easier development, but run all of its architectural
-dependencies -- database, cache, adjacent services -- in containers. The
-dependencies can even be running on another machine, e.g. a cloud instance or a
-container cluster, provided your development machine has TCP connectivity on every
-port exposed by a container.  
+your host for quicker and easier development, but run all of its dependencies --
+database, cache, adjacent services -- in containers. The dependencies can even run
+on another machine, e.g. a cloud instance or a container cluster, provided your
+development machine has TCP connectivity to every port exposed by a container.  
 
 Throughout this documentation we will refer to this gem as `Docker::Compose`
 as opposed to the `docker-compose` tool that this gem wraps.
@@ -62,7 +61,7 @@ end
 ```
 
 Notice that `rake -T` now has a few additional tasks for invoking gem
-functionality. You can `docker:compose:env` print shell exports for
+functionality. You can `docker:compose:env` to print shell exports for
 host-to-container environment mapping, or you can `docker:compose:host[foo]`.
 
 ### Hosting a Command
@@ -71,7 +70,7 @@ To run a process on your host and allow it to talk to containers, use
 the `docker:compose:host` task. For example, I could enter a shell
 with `rake docker:compose:host[bash]`.
 
-Before "hosting" your command, the Rake task export ssome environment
+Before "hosting" your command, the Rake task exports some environment
 variables that your command can use to discover services running in
 containers. Your Rakefile specifies which variables your app needs
 (the `host_env` option) and which container information each variable should
