@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'json'
 require 'rake/tasklib'
 require 'shellwords'
@@ -63,7 +64,7 @@ module Docker::Compose
       yield self if block_given?
 
       @shell = Backticks::Runner.new
-      @session = Docker::Compose::Session.new(@shell, dir:dir, file:file)
+      @session = Docker::Compose::Session.new(@shell, dir: dir, file: file)
       @net_info = Docker::Compose::NetInfo.new
       @shell_printer = Docker::Compose::ShellPrinter.new
 
@@ -73,7 +74,7 @@ module Docker::Compose
     end
 
     private def define
-      namespace self.rake_namespace do
+      namespace rake_namespace do
         desc 'Print bash exports with IP/ports of running services'
         task :env do
           @shell.interactive = false # suppress useless 'port' output
@@ -85,18 +86,17 @@ module Docker::Compose
           # how we intend it to be used.
           print_usage if tty && tlt
 
-          export_env(print:tlt)
+          export_env(print: tlt)
 
           @shell.interactive = true
         end
 
         desc 'Run command on host, linked to services in containers'
-        task :host, [:command] => ['docker:compose:env'] do |task, args|
-
-          if self.host_services
-            @session.up(*self.host_services, detached:true)
+        task :host, [:command] => ['docker:compose:env'] do |_task, args|
+          if host_services
+            @session.up(*host_services, detached: true)
           else
-            @session.up(detached:true)
+            @session.up(detached: true)
           end
 
           exec(args[:command])
@@ -108,14 +108,14 @@ module Docker::Compose
     # published by docker-compose services. Optionally also print bash export
     # statements so this information can be made available to a user's shell.
     private def export_env(print:)
-      Docker::Compose::Mapper.map(self.host_env,
-                                  session:@session,
-                                  net_info:@net_info) do |k, v|
+      Docker::Compose::Mapper.map(host_env,
+                                  session: @session,
+                                  net_info: @net_info) do |k, v|
         ENV[k] = serialize_for_env(v)
         print_env(k, ENV[k]) if print
       end
 
-      self.extra_host_env.each do |k, v|
+      extra_host_env.each do |k, v|
         ENV[k] = serialize_for_env(v)
         print_env(k, ENV[k]) if print
       end
@@ -133,7 +133,7 @@ module Docker::Compose
       when Array
         JSON.dump(v)
       else
-        raise ArgumentError, "Can't represent a #{v.class} in the environment"
+        fail ArgumentError, "Can't represent a #{v.class} in the environment"
       end
     end
 
@@ -146,10 +146,9 @@ module Docker::Compose
       end
     end
 
-
     private def print_usage
       command = "rake #{rake_namespace}:env"
-      command = "bundle exec " + command if defined?(Bundler)
+      command = 'bundle exec ' + command if defined?(Bundler)
       puts @shell_printer.comment('To export these variables to your shell, run:')
       puts @shell_printer.comment(@shell_printer.eval_output(command))
     end

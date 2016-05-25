@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'backticks'
 require 'yaml'
 
@@ -16,7 +17,7 @@ module Docker::Compose
   class Session
     attr_reader :dir, :file
 
-    def initialize(shell=Backticks::Runner.new(interactive:true),
+    def initialize(shell = Backticks::Runner.new(interactive: true),
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell
       @dir = dir
@@ -54,13 +55,13 @@ module Docker::Compose
     def up(*services,
            detached:false, timeout:10, no_build:false, no_deps:false)
       run!('up',
-           {d:detached, timeout:timeout, no_build:no_build, no_deps:no_deps},
+           { d: detached, timeout: timeout, no_build: no_build, no_deps: no_deps },
            services)
       true
     end
 
     def rm(*services, force:false, volumes:false, all:true)
-      run!('rm', {f:force, v:volumes, a:all}, services)
+      run!('rm', { f: force, v: volumes, a: all }, services)
     end
 
     # Idempotently run a service in the project.
@@ -74,9 +75,9 @@ module Docker::Compose
     # @param [Boolean] rm remove the container when done
     # @raise [Error] if command fails
     def run(service, *cmd, detached:false, no_deps:false, env_vars:[], rm:false)
-      formated_vars = env_vars.map{|v| {e: v}}
+      formated_vars = env_vars.map { |v| { e: v } }
       run!('run',
-           {d:detached, no_deps:no_deps, rm:rm}, *formated_vars, service, cmd)
+           { d: detached, no_deps: no_deps, rm: rm }, *formated_vars, service, cmd)
     end
 
     # Stop running services.
@@ -84,7 +85,7 @@ module Docker::Compose
     # @param [Integer] timeout how long to wait for each service to stop
     # @raise [Error] if command fails
     def stop(*services, timeout:10)
-      run!('stop', {timeout:timeout}, services)
+      run!('stop', { timeout: timeout }, services)
     end
 
     # Figure out which host a port a given service port has been published to.
@@ -94,7 +95,7 @@ module Docker::Compose
     # @param [Integer] index of container (if multiple instances running)
     # @raise [Error] if command fails
     def port(service, port, protocol:'tcp', index:1)
-      run!('port', {protocol:protocol, index:index}, service, port)
+      run!('port', { protocol: protocol, index: index }, service, port)
     end
 
     # Determine the installed version of docker-compose.
@@ -103,7 +104,7 @@ module Docker::Compose
     #   otherwise, returns a Hash of component-name strings to version strings
     # @raise [Error] if command fails
     def version(short:false)
-      result = run!('version', short:short, file:false, dir:false)
+      result = run!('version', short: short, file: false, dir: false)
 
       if short
         result.strip
@@ -133,8 +134,10 @@ module Docker::Compose
 
       Dir.chdir(@dir) do
         cmd = @shell.run('docker-compose', project_opts, *args).join
-        status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
-        status.success? || raise(Error.new(args.first, status, err))
+        status = cmd.status
+        out = cmd.captured_output
+        err = cmd.captured_error
+        status.success? || fail(Error.new(args.first, status, err))
         out
       end
     end

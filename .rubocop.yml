@@ -1,0 +1,35 @@
+# CODING CONVENTIONS
+#  - any cop that can be auto-corrected with `rubocop -a` is mandatory
+#  - other cops may be enabled if committer fixes all issues
+AllCops:
+  Exclude:
+  - features/**/*
+  - spec/**/*
+Style/Encoding:
+  Enabled: true
+Style/FormatString:
+  Enabled: false
+Style/GuardClause:
+  Enabled: false
+Lint/AmbiguousRegexpLiteral:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/ClassLength:
+  Enabled: false
+Metrics/LineLength:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Style/ClassAndModuleChildren:
+  Enabled: false
+Style/Documentation:
+  Enabled: false
+Style/RaiseArgs:
+  Enabled: false
+Style/Semicolon:
+  Enabled: false

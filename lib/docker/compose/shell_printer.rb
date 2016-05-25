@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'etc'
 
 module Docker::Compose
@@ -10,7 +11,11 @@ module Docker::Compose
       basename[0] = basename[0].upcase
 
       # Find adapter class named after shell; default to posix if nothing found
-      klass = const_get(basename.to_sym) rescue Posix
+      klass = begin
+                const_get(basename.to_sym)
+              rescue
+                Posix
+              end
 
       klass.new
     end

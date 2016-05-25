@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Docker::Compose
   # Utility that gathers information about the relationship between the host
   # on which the Ruby VM is running and the docker host, then makes an
@@ -23,8 +24,8 @@ module Docker::Compose
     # Create a new instance of this class.
     # @param [String] docker_host a URI pointing to the docker host
     # @param [Array] list of String dotted-quad IPv4 addresses of local host
-    def initialize(docker_host=ENV['DOCKER_HOST'],
-                   my_ips=self.class.ipv4_interfaces)
+    def initialize(docker_host = ENV['DOCKER_HOST'],
+                   my_ips = self.class.ipv4_interfaces)
       docker_host ||= 'unix:/var/run/docker.sock'
       @docker_url = URI.parse(docker_host)
       @my_ips = my_ips
@@ -39,7 +40,7 @@ module Docker::Compose
     #
     # @return [String] IPv4 address of host machine that _may_ be reachable from
     #   Docker machine
-    def host_routable_ip(target_ip=docker_routable_ip)
+    def host_routable_ip(target_ip = docker_routable_ip)
       best_match  = ''
       best_prefix = 0
 

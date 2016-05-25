@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Docker::Compose
   # Uses a Session to discover information about services' IP addresses and
   # ports as reachable from the host, then
@@ -31,7 +32,7 @@ module Docker::Compose
         override_host = net_info.docker_routable_ip
       end
 
-      mapper = self.new(session, override_host)
+      mapper = new(session, override_host)
       env.each_pair do |k, v|
         begin
           v = mapper.map(v)
@@ -46,7 +47,7 @@ module Docker::Compose
     # @param [Docker::Compose::Session] session
     # @param [String] override_host forcible address or DNS hostname to use;
     #   leave nil to trust docker-compose output.
-    def initialize(session, override_host=nil)
+    def initialize(session, override_host = nil)
       @session = session
       @override_host = override_host
     end
@@ -102,7 +103,11 @@ module Docker::Compose
     # @param [String] value
     # @return [String]
     private def map_scalar(value)
-      uri = URI.parse(value) rescue nil
+      uri = begin
+              URI.parse(value)
+            rescue
+              nil
+            end
       pair = value.split(':')
 
       if uri && uri.scheme && uri.host
@@ -121,7 +126,7 @@ module Docker::Compose
           # the service is running.
           service = pair.first
           port = pair.last.gsub(REMOVE_ELIDED, '')
-          host, _ = host_and_port(service, port)
+          host, = host_and_port(service, port)
           return host
         else
           # output port:hostname pair
@@ -129,7 +134,7 @@ module Docker::Compose
           return "#{host}:#{port}"
         end
       else
-        raise BadSubstitution, "Can't understand '#{value}'"
+        fail BadSubstitution, "Can't understand '#{value}'"
       end
     end
   end

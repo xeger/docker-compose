@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Docker::Compose::ShellPrinter
   # Printer that works with the Friendly Interactive Shell (fish).
   class Fish < Posix

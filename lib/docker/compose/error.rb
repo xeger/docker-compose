@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Docker::Compose
   class Error < RuntimeError
     attr_reader :status, :detail

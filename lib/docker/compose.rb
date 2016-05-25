@@ -1,3 +1,4 @@
+# encoding: utf-8
 require_relative 'compose/version'
 require_relative 'compose/error'
 require_relative 'compose/session'

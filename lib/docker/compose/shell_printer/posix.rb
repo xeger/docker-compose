@@ -1,3 +1,4 @@
+# encoding: utf-8
 module Docker::Compose::ShellPrinter
   # Printer that works with any POSIX-compliant shell e.g. sh, bash, zsh
   class Posix
