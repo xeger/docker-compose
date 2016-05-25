@@ -32,4 +32,15 @@ describe Docker::Compose::Session do
       session.up detached:true
     end
   end
+
+  describe '#rm' do
+    it 'removes containers' do
+      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false,a:true), [])
+      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false,a:true), ['joebob'])
+      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:true,v:true), [])
+      session.rm
+      session.rm 'joebob'
+      session.rm force:true,volumes:true
+    end
+  end
 end

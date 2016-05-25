@@ -59,6 +59,10 @@ module Docker::Compose
       true
     end
 
+    def rm(*services, force:false, volumes:false, all:true)
+      run!('rm', {f:force, v:volumes, a:all}, services)
+    end
+
     # Idempotently run a service in the project.
     # @param [String] service name to run
     # @param [String] cmd command statement to run
