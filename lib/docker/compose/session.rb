@@ -40,6 +40,17 @@ module Docker::Compose
       true
     end
 
+    def ps()
+      lines = run!('ps', q:true).split(/[\r\n]+/)
+      containers = Collection.new
+
+      lines.each do |id|
+        containers << docker_ps(id)
+      end
+
+      containers
+    end
+
     # Idempotently up the given services in the project.
     # @param [Array] services list of String service names to run
     # @param [Boolean] detached if true, to start services in the background;
@@ -63,7 +74,7 @@ module Docker::Compose
       run!('rm', {f:force, v:volumes, a:all}, services)
     end
 
-    # Idempotently run a service in the project.
+    # Idempotently run an arbitrary command with a service container.
     # @param [String] service name to run
     # @param [String] cmd command statement to run
     # @param [Boolean] detached if true, to start services in the background;
@@ -137,6 +148,51 @@ module Docker::Compose
         status.success? || raise(Error.new(args.first, status, err))
         out
       end
+    end
+
+    private
+
+    PS_FORMAT = '({{.ID}}) ({{.Image}}) ({{.Size}}) ({{.Status}}) ({{.Names}}) ({{.Labels}}) ({{.Ports}}) ({{.Mounts}})'
+
+    def docker_ps(id)
+      # docker ps -f id=c9e116fe1ce9732f7f715386078a317d8e322adaf98fa41507d1077d3af9ba02
+      cmd = @shell.run('docker', 'ps', a:true, f:"id=#{id}", format:PS_FORMAT).join
+      status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
+      raise Error, "Unexpected output from docker ps" unless status == 0
+      lines = out.split(/[\r\n]+/)
+      return nil if lines.empty?
+      l = lines.shift
+      m = parse(l)
+      raise Error, "Cannot parse docker ps output: #{l}" unless m.respond_to?(:size) && m.size == 6
+      return Container.new(m[0],m[1],m[2],m[3],m[4],m[5],m[6],m[7])
+    end
+
+    def parse(str)
+      fields = []
+      nest = 0
+      field = ''
+      str.each_char do |ch|
+        if nest == 0
+          nest += 1 if ch == '('
+        else
+          if ch == '('
+            nest += 1
+          elsif ch == ')'
+            nest -= 1
+            field << ch unless nest == 0
+          else
+            field << ch
+          end
+        end
+
+        # nest just became 0
+        if nest == 0 && !field.empty?
+          fields << field
+          field = ''
+        end
+      end
+
+      fields
     end
   end
 end
