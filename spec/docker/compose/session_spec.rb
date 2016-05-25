@@ -24,6 +24,12 @@ describe Docker::Compose::Session do
     end
   end
 
+  describe '#ps' do
+    it 'lists containers' do
+      session.ps
+    end
+  end
+
   describe '#up' do
     it 'runs containers' do
       expect(shell).to receive(:run).with('docker-compose', anything, 'up', anything, anything)
