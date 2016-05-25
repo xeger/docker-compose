@@ -4,12 +4,15 @@
 require 'bundler/setup'
 require 'docker/compose'
 
-# You can add fixtures and/or initialization code here to make experimenting
-# with your gem easier. You can also use a different console, if you like.
+@session = Docker::Compose::Session.new
 
-# (If you use this, don't forget to add pry to your Gemfile!)
-# require "pry"
-# Pry.start
-
-require 'irb'
-IRB.start
+begin
+  require 'pry'
+  Pry.start(@session)
+rescue LoadError
+  require 'irb'
+  IRB.setup nil
+  IRB.conf[:MAIN_CONTEXT] = IRB::Irb.new.context
+  require 'irb/ext/multi-irb'
+  IRB.irb nil, @session
+end

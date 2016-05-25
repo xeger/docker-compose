@@ -1,0 +1,6 @@
+apple:
+  image: busybox
+  command: /bin/sh -c 'sleep 3600'
+orange:
+  image: busybox
+  command: /bin/sh -c 'sleep 3600'

@@ -9,8 +9,17 @@ module Docker::Compose
     def initialize(cmd, status, detail)
       @status = status
       @detail = detail
+
       brief = detail.split("\n").first || '(no output)'
-      message = format("'%s' failed with status %d: %s", cmd, status, brief)
+
+      case status
+      when Numeric
+        status = status.to_s
+      else
+        status = "'#{status}'"
+      end
+
+      message = format("'%s' failed with status %s: %s", cmd, status, brief)
       super(message)
     end
   end
