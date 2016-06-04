@@ -25,6 +25,20 @@ describe Docker::Compose::Session do
   end
 
   describe '#ps' do
+    let(:hashes) { ['corned_beef', 'sweet_potato', 'afghan_black'] }
+    let(:output) { hashes.join("\n") }
+
+    before do
+      hashes.each do |h|
+        cmd = double('command',
+                     status:status,
+                     captured_output:"(#{h}) (xeger/#{h}:latest) (1 mb) (Up 1 second) (#{h}) () ()",
+                     captured_error:'')
+        allow(cmd).to receive(:join).and_return(cmd)
+        expect(shell).to receive(:run).with('docker', 'ps', hash_including(f:"id=#{h}")).and_return(cmd)
+      end
+    end
+
     it 'lists containers' do
       session.ps
     end

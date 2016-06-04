@@ -49,7 +49,7 @@ exited = compose.ps.where { |c| !c.up? }
 puts "We have some exited containers: " + exited.join(', ')
 
 sum = compose.ps.inject(0) { |a,c| a + c.size }
-puts format("Composition is using %.1f MiB disk space", sum/1024/1024) 
+puts format("Composition is using %.1f MiB disk space", sum/1024.0**2) 
 ```
 
 ### Invoking from Rake
