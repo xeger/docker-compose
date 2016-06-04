@@ -45,7 +45,6 @@ module Docker::Compose
       inter = @shell.interactive
       @shell.interactive = false
 
-
       lines = run!('ps', q:true).split(/[\r\n]+/)
       containers = Collection.new
 
