@@ -60,8 +60,8 @@ module Docker::Compose
       true
     end
 
-    def rm(*services, force:false, volumes:false, all:true)
-      run!('rm', { f: force, v: volumes, a: all }, services)
+    def rm(*services, force:false, volumes:false)
+      run!('rm', { f: force, v: volumes }, services)
     end
 
     # Idempotently run a service in the project.
