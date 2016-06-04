@@ -60,7 +60,7 @@ module Docker::Compose
       true
     end
 
-    def rm(*services, force:false, volumes:false, all:true)
+    def rm(*services, force:false, volumes:false)
       run!('rm', { f: force, v: volumes }, services)
     end
 
