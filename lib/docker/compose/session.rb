@@ -152,41 +152,48 @@ module Docker::Compose
 
     private
 
-    PS_FORMAT = '({{.ID}}) ({{.Image}}) ({{.Size}}) ({{.Status}}) ({{.Names}}) ({{.Labels}}) ({{.Ports}}) ({{.Mounts}})'
-
     def docker_ps(id)
       # docker ps -f id=c9e116fe1ce9732f7f715386078a317d8e322adaf98fa41507d1077d3af9ba02
-      cmd = @shell.run('docker', 'ps', a:true, f:"id=#{id}", format:PS_FORMAT).join
+
+      cmd = @shell.run('docker', 'ps', a:true, f:"id=#{id}", format:Container::PS_FMT).join
       status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
-      raise Error, "Unexpected output from docker ps" unless status == 0
+      raise Error.new('docker ps', status, "Unexpected output") unless status.success?
       lines = out.split(/[\r\n]+/)
       return nil if lines.empty?
       l = lines.shift
       m = parse(l)
-      raise Error, "Cannot parse docker ps output: #{l}" unless m.respond_to?(:size) && m.size == 6
-      return Container.new(m[0],m[1],m[2],m[3],m[4],m[5],m[6],m[7])
+      raise Error.new('docker ps', status, "Cannot parse output: '#{l}'") unless m
+      return Container.new(*m)
     end
 
+    # parse values enclosed within parentheses; values may contain nested
+    # matching pairs of parentheses
     def parse(str)
       fields = []
       nest = 0
       field = ''
       str.each_char do |ch|
+        got = false
         if nest == 0
-          nest += 1 if ch == '('
+          if ch == '('
+            nest += 1
+          end
         else
           if ch == '('
             nest += 1
           elsif ch == ')'
             nest -= 1
-            field << ch unless nest == 0
+            if nest == 0
+              got = true
+            else
+              field << ch
+            end
           else
             field << ch
           end
         end
 
-        # nest just became 0
-        if nest == 0 && !field.empty?
+        if got
           fields << field
           field = ''
         end
