@@ -42,6 +42,10 @@ module Docker::Compose
     end
 
     def ps()
+      inter = @shell.interactive
+      @shell.interactive = false
+
+
       lines = run!('ps', q:true).split(/[\r\n]+/)
       containers = Collection.new
 
@@ -50,6 +54,8 @@ module Docker::Compose
       end
 
       containers
+    ensure
+      @shell.interactive = inter
     end
 
     # Idempotently up the given services in the project.
@@ -156,8 +162,6 @@ module Docker::Compose
     private
 
     def docker_ps(id)
-      # docker ps -f id=c9e116fe1ce9732f7f715386078a317d8e322adaf98fa41507d1077d3af9ba02
-
       cmd = @shell.run('docker', 'ps', a:true, f:"id=#{id}", format:Container::PS_FMT).join
       status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
       raise Error.new('docker ps', status, "Unexpected output") unless status.success?
