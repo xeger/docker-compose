@@ -38,15 +38,22 @@ module Docker::Compose
         raise Error.new('Service#new', status, 'Unrecognized status') unless status
       end
 
-      names = names.split(',') if names.is_a?(String)
-      labels = labels.split(',') if labels.is_a?(String)
+      names = names.split(',').map{ |x| x.strip } if names.is_a?(String)
+      labels = labels.split(',').map{ |x| x.strip } if labels.is_a?(String)
       ports = ports.split(',').map{ |x| x.strip } if ports.is_a?(String)
 
       @id = id
       @image = image
       @size = size
       @status = status[1].downcase.to_sym
-      @exitstatus = !status[2].empty? && status[2].to_i # sloppy!
+
+      @exitstatus = case @status
+      when :up
+        nil
+      else
+        status[2].to_i
+      end
+
       @names = names
       @labels = labels
       @ports = ports
