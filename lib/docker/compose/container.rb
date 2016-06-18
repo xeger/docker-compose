@@ -40,7 +40,7 @@ module Docker::Compose
 
       names = names.split(',') if names.is_a?(String)
       labels = labels.split(',') if labels.is_a?(String)
-      ports = ports.split(',') if ports.is_a?(String)
+      ports = ports.split(',').map{ |x| x.strip } if ports.is_a?(String)
 
       @id = id
       @image = image
