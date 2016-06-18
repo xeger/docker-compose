@@ -1,6 +1,11 @@
+# basic smoke test for the gem.
+# TODO: write cucumber features for comprehensive functional tests!
 apple:
   image: busybox
   command: /bin/sh -c 'sleep 3600'
+  ports:
+    - 123
+    - 456
 orange:
   image: busybox
   command: /bin/sh -c 'sleep 3600'

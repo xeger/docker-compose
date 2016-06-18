@@ -87,13 +87,31 @@ module Docker::Compose
     #   otherwise, monitor logs in the foreground and shutdown on Ctrl+C
     # @param [Boolean] no_deps if true, just run specified services without
     #   running the services that they depend on
-    # @param [Array] env_vars a list of environment variables (see: -e flag)
+    # @param [Array] env a list of environment variables (see: -e flag)
+    # @param [Array] env_vars DEPRECATED alias for env kwarg
     # @param [Boolean] rm remove the container when done
     # @raise [Error] if command fails
-    def run(service, *cmd, detached:false, no_deps:false, env_vars:[], rm:false)
-      formated_vars = env_vars.map { |v| { e: v } }
+    def run(service, *cmd, detached:false, no_deps:false, env:[], env_vars:nil, rm:false)
+      # handle deprecated kwarg
+      if (env.nil? || env.empty?) && !env_vars.nil?
+        env = env_vars
+      end
+
+      env_params = env.map { |v| { e: v } }
       run!('run',
-           { d: detached, no_deps: no_deps, rm: rm }, *formated_vars, service, cmd)
+           { d: detached, no_deps: no_deps, rm: rm }, *env_params, service, cmd)
+    end
+
+    # Pause running services.
+    # @param [Array] services list of String service names to run
+    def pause(*services)
+      run!('pause', *services)
+    end
+
+    # Unpause running services.
+    # @param [Array] services list of String service names to run
+    def unpause(*services)
+      run!('unpause', *services)
     end
 
     # Stop running services.
@@ -102,6 +120,14 @@ module Docker::Compose
     # @raise [Error] if command fails
     def stop(*services, timeout:10)
       run!('stop', { timeout: timeout }, services)
+    end
+
+    # Forcibly stop running services.
+    # @param [Array] services list of String service names to stop
+    # @param [String] name of murderous signal to use, default is 'KILL'
+    # @see Signal.list for a list of acceptable signal names
+    def kill(*services, signal:'KILL')
+      run!('kill', { s: signal }, services)
     end
 
     # Figure out which host a port a given service port has been published to.
