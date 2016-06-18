@@ -1,5 +1,5 @@
 describe Docker::Compose::Session do
-  let(:shell) { double('shell') }
+  let(:shell) { double('shell', interactive: false) }
   subject(:session) { described_class.new(shell) }
 
   let(:exitstatus) { 0 }
@@ -36,6 +36,7 @@ describe Docker::Compose::Session do
                      captured_error:'')
         allow(cmd).to receive(:join).and_return(cmd)
         expect(shell).to receive(:run).with('docker', 'ps', hash_including(f:"id=#{h}")).and_return(cmd)
+        allow(shell).to receive(:interactive=)
       end
     end
 
@@ -55,8 +56,8 @@ describe Docker::Compose::Session do
 
   describe '#rm' do
     it 'removes containers' do
-      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false,a:true), [])
-      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false,a:true), ['joebob'])
+      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false), [])
+      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false), ['joebob'])
       expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:true,v:true), [])
       session.rm
       session.rm 'joebob'

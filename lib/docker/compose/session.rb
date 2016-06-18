@@ -17,7 +17,7 @@ module Docker::Compose
   class Session
     attr_reader :dir, :file
 
-    def initialize(shell = Backticks::Runner.new(interactive: true),
+    def initialize(shell = Backticks::Runner.new(buffered:[:stderr], interactive: true),
                    dir:Dir.pwd, file:'docker-compose.yml')
       @shell = shell
       @dir = dir
