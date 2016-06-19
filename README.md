@@ -1,3 +1,8 @@
+
+
+[![Build Status](https://travis-ci.org/xeger/docker-compose.svg)](https://travis-ci.org/xeger/docker-compose) [![Docs](https://img.shields.io/badge/docs-rubydoc-orange.svg)](http://www.rubydoc.info/gems/docker-compose)
+
+
 # Docker::Compose
 
 This is a Ruby OOP wrapper for the [docker-compose](https://github.com/docker/compose)
