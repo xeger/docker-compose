@@ -24,6 +24,15 @@ describe Docker::Compose::Session do
     end
   end
 
+  describe '#build' do
+    it 'creates images' do
+      expect(shell).to receive(:run).with('docker-compose', anything, 'build', ['alice', 'bob'], {force_rm:false, no_cache:false, pull:false}).once
+      session.build('alice', 'bob')
+      expect(shell).to receive(:run).with('docker-compose', anything, 'build', [], {force_rm:true, no_cache:true, pull:true}).once
+      session.build(force_rm:true, no_cache:true, pull:true)
+    end
+  end
+
   describe '#ps' do
     let(:hashes) { ['corned_beef', 'sweet_potato', 'afghan_black'] }
     let(:output) { hashes.join("\n") }

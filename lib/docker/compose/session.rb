@@ -160,6 +160,11 @@ module Docker::Compose
       end
     end
 
+    def  build(*services, force_rm:false, no_cache:false, pull:false)
+      result = run!('build', services,
+                    force_rm:force_rm, no_cache:no_cache, pull:pull)
+    end
+
     # Run a docker-compose command without validating that the CLI parameters
     # make sense. Prepend project and file options if suitable.
     #
