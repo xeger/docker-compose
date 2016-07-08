@@ -186,12 +186,20 @@ module Docker::Compose
     # @return [String] output of the command
     # @raise [Error] if command fails
     def run!(*args)
-      project_opts = {
-        file: @file
-      }
+      file_args = case @file
+        when 'docker-compose.yml'
+          []
+        when Array
+          # backticks sugar can't handle array values; build a list of hashes
+          # IMPORTANT: preserve the order of the files so overrides work correctly
+          file_args = @file.map{ |filepath| {:file => filepath} }
+        else
+          # a single String (or Pathname, etc); use normal sugar to add it
+          [{file: @file.to_s}]
+      end
 
       Dir.chdir(@dir) do
-        cmd = @shell.run('docker-compose', project_opts, *args).join
+        cmd = @shell.run('docker-compose', *file_args, *args).join
         status = cmd.status
         out = cmd.captured_output
         err = cmd.captured_error

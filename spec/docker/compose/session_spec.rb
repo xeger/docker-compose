@@ -26,9 +26,9 @@ describe Docker::Compose::Session do
 
   describe '#build' do
     it 'creates images' do
-      expect(shell).to receive(:run).with('docker-compose', anything, 'build', ['alice', 'bob'], {force_rm:false, no_cache:false, pull:false}).once
+      expect(shell).to receive(:run).with('docker-compose', 'build', ['alice', 'bob'], {force_rm:false, no_cache:false, pull:false}).once
       session.build('alice', 'bob')
-      expect(shell).to receive(:run).with('docker-compose', anything, 'build', [], {force_rm:true, no_cache:true, pull:true}).once
+      expect(shell).to receive(:run).with('docker-compose', 'build', [], {force_rm:true, no_cache:true, pull:true}).once
       session.build(force_rm:true, no_cache:true, pull:true)
     end
   end
@@ -56,8 +56,8 @@ describe Docker::Compose::Session do
 
   describe '#up' do
     it 'runs containers' do
-      expect(shell).to receive(:run).with('docker-compose', anything, 'up', anything, anything)
-      expect(shell).to receive(:run).with('docker-compose', anything, 'up', hash_including(d:true), anything)
+      expect(shell).to receive(:run).with('docker-compose', 'up', anything, anything)
+      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(d:true), anything)
       session.up
       session.up detached:true
     end
@@ -65,12 +65,42 @@ describe Docker::Compose::Session do
 
   describe '#rm' do
     it 'removes containers' do
-      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false), [])
-      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:false,v:false), ['joebob'])
-      expect(shell).to receive(:run).with('docker-compose', anything, 'rm', hash_including(f:true,v:true), [])
+      expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:false,v:false), [])
+      expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:false,v:false), ['joebob'])
+      expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:true,v:true), [])
       session.rm
       session.rm 'joebob'
       session.rm force:true,volumes:true
+    end
+  end
+
+  describe '#run!' do
+    it 'omits "--file" when possible' do
+      fancypants = described_class.new(shell, file:'docker-compose.yml')
+      expect(shell).to receive(:run).with('docker-compose', 'foo')
+      fancypants.instance_eval { run!('foo') }
+    end
+
+    it 'handles file overrides' do
+      fancypants = described_class.new(shell, file:'docker-decompose.yml')
+      expect(shell).to receive(:run).with('docker-compose', {file: 'docker-decompose.yml'}, 'foo')
+      fancypants.instance_eval { run!('foo') }
+    end
+
+    it 'handles multiple files' do
+      fancypants = described_class.new(shell, file:['orange.yml', 'apple.yml'])
+      expect(shell).to receive(:run).with('docker-compose', {file: 'orange.yml'}, {file: 'apple.yml'}, 'foo')
+      fancypants.instance_eval { run!('foo') }
+    end
+
+    it 'handles weird input' do
+      fancypants = described_class.new(shell, file:42)
+      expect(shell).to receive(:run).with('docker-compose', {file: '42'}, 'foo')
+      fancypants.instance_eval { run!('foo') }
+
+      fancypants = described_class.new(shell, file:Pathname.new('/tmp/moo.yml'))
+      expect(shell).to receive(:run).with('docker-compose', {file: '/tmp/moo.yml'}, 'foo')
+      fancypants.instance_eval { run!('foo') }
     end
   end
 end
