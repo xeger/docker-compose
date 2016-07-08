@@ -76,6 +76,11 @@ module Docker::Compose
       true
     end
 
+    # Take the stack down
+    def down
+      run!('down')
+    end
+
     def rm(*services, force:false, volumes:false)
       run!('rm', { f: force, v: volumes }, services)
     end
