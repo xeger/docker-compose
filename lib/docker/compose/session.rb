@@ -81,6 +81,12 @@ module Docker::Compose
       run!('down')
     end
 
+    # Pull images of services
+    # @param [Array] services list of String service names to pull
+    def pull(*services)
+      run!('pull', *services)
+    end
+
     def rm(*services, force:false, volumes:false)
       run!('rm', { f: force, v: volumes }, services)
     end
