@@ -175,28 +175,20 @@ module Docker::Compose
     # @return [String] output of the command
     # @raise [Error] if command fails
     def run!(*args)
-      project_opts = {}
-      case @file
+      file_args = case @file
+        when 'docker-compose.yml'
+          []
         when Array
-          # a list of compose files, so keep the order and add them
-          # we cannot use the sugar way, since it does only support arrays for a single key
-
-          # create a array of hashmaps with file -> filepath, thats the only way we can pass this to backtick
-          compose_file_args = @file.map{ |filepath| {:file => filepath} }
-          # ensure we add at the very start keeping the order
-          args = compose_file_args + args
-        when Hash
-          # hashes do not make any sense - we would throw away the keys. Probably do so, but for now, bail out
-          raise 'Please use either a list of compose file as array or a simple string for a single file'
+          # backticks sugar can't handle array values; build a list of hashes
+          # IMPORTANT: preserve the order of the files so overrides work correctly
+          file_args = @file.map{ |filepath| {:file => filepath} }
         else
-          # a single file, just use sugar to add it
-          project_opts = {
-              file: @file
-          }
+          # a single String (or Pathname, etc); use normal sugar to add it
+          [{file: @file.to_s}]
       end
 
       Dir.chdir(@dir) do
-        cmd = @shell.run('docker-compose', project_opts, *args).join
+        cmd = @shell.run('docker-compose', *file_args, *args).join
         status = cmd.status
         out = cmd.captured_output
         err = cmd.captured_error
