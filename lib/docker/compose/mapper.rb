@@ -98,11 +98,13 @@ module Docker::Compose
       raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
     end
 
+    private
+
     # Map a single string, replacing service names with IPs and container ports
     # with the host ports that they have been mapped to.
     # @param [String] value
     # @return [String]
-    private def map_scalar(value)
+    def map_scalar(value)
       uri = begin
               URI.parse(value)
             rescue

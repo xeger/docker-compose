@@ -73,7 +73,9 @@ module Docker::Compose
       define
     end
 
-    private def define
+    private
+
+    def define
       namespace rake_namespace do
         desc 'Print bash exports with IP/ports of running services'
         task :env do
@@ -107,7 +109,7 @@ module Docker::Compose
     # Substitute and set environment variables that point to network ports
     # published by docker-compose services. Optionally also print bash export
     # statements so this information can be made available to a user's shell.
-    private def export_env(print:)
+    def export_env(print:)
       Docker::Compose::Mapper.map(host_env,
                                   session: @session,
                                   net_info: @net_info) do |k, v|
@@ -124,7 +126,7 @@ module Docker::Compose
     # Transform a Ruby value into a String that can be stored in the
     # environment. This accepts nil, String, or Array and returns nil, String
     # or JSON-serialized Array.
-    private def serialize_for_env(v)
+    def serialize_for_env(v)
       case v
       when String
         v
@@ -138,7 +140,7 @@ module Docker::Compose
     end
 
     # Print an export or unset statement suitable for user's shell
-    private def print_env(k, v)
+    def print_env(k, v)
       if v
         puts @shell_printer.export(k, v)
       else
@@ -146,7 +148,7 @@ module Docker::Compose
       end
     end
 
-    private def print_usage
+    def print_usage
       command = "rake #{rake_namespace}:env"
       command = 'bundle exec ' + command if defined?(Bundler)
       puts @shell_printer.comment('To export these variables to your shell, run:')
