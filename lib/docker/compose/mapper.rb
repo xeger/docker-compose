@@ -1,7 +1,16 @@
 # encoding: utf-8
 module Docker::Compose
   # Uses a Session to discover information about services' IP addresses and
-  # ports as reachable from the host, then
+  # ports as reachable from localhost, then maps URLs and other common network
+  # address formats so they point to the right host and port.
+  #
+  # **NOTE**: this class uses some heuristics to deal with cases where the
+  # Docker client is talking to a remote server because the `DOCKER_HOST`
+  # environment variable is set. In those cases, Mapper tries to determine
+  # the IP address of the exposed services as reachable from localhost;
+  # it generally makes a correct guess, but in certain super-complex networking
+  # scenarios it may guess wrong. Please open a GitHub issue if you find
+  # a situation where Mapper provides a wrong answer.
   class Mapper
     # Pattern that matches an "elided" host or port that should be omitted from
     # output, but is needed to identify a specific container and port.

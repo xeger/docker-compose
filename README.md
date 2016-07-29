@@ -6,9 +6,9 @@
 # Docker::Compose
 
 This is a Ruby OOP wrapper for the [docker-compose](https://github.com/docker/compose)
-container orchestration tool from Docker Inc. 
+container orchestration tool from Docker Inc.
 
-In addition to wrapping the CLI, this gem provides an environment-variable mapping 
+In addition to wrapping the CLI, this gem provides an environment-variable mapping
 feature that allows you to export environment variables into your _host_ that point
 to network services exposed by containers. This allows you to run an application on
 your host for quicker and easier development, but run all of its dependencies --
@@ -54,7 +54,7 @@ exited = compose.ps.where { |c| !c.up? }
 puts "We have some exited containers: " + exited.join(', ')
 
 sum = compose.ps.inject(0) { |a,c| a + c.size }
-puts format("Composition is using %.1f MiB disk space", sum/1024.0**2) 
+puts format("Composition is using %.1f MiB disk space", sum/1024.0**2)
 ```
 
 ### Invoking from Rake
@@ -171,4 +171,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/xeger/
 ## License
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-

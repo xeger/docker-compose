@@ -140,15 +140,25 @@ module Docker::Compose
       run!('kill', o, services)
     end
 
-    # Figure out which host a port a given service port has been published to.
+    # Figure out which interface(s) and port a given service port has been published to.
+    #
+    # **NOTE**: if Docker Compose is communicating with a remote Docker host, this method
+    # returns IP addresses from the point of view of *that* host and its interfaces. If
+    # you need to know the address as reachable from localhost, you probably want to use
+    # `Mapper`.
+    #
+    # @see Docker::Compose::Mapper
+    #
     # @param [String] service name of service from docker-compose.yml
     # @param [Integer] port number of port
     # @param [String] protocol 'tcp' or 'udp'
     # @param [Integer] index of container (if multiple instances running)
+    # @return [String,nil] an ip:port pair such as "0.0.0.0:32176" or nil if the service is not running
     # @raise [Error] if command fails
     def port(service, port, protocol: 'tcp', index: 1)
       o = opts(protocol: [protocol, 'tcp'], index: [index, 1])
-      run!('port', o, service, port)
+      s = run!('port', o, service, port).strip
+      (!s.empty? && s) || nil
     end
 
     # Determine the installed version of docker-compose.

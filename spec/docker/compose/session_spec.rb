@@ -37,6 +37,8 @@ describe Docker::Compose::Session do
     let(:hashes) { ['corned_beef', 'sweet_potato', 'afghan_black'] }
     let(:output) { hashes.join("\n") }
 
+    # Mock some additional calls to run! that the ps method makes in order
+    # to get info about each container
     before do
       hashes.each do |h|
         cmd = double('command',
@@ -71,6 +73,22 @@ describe Docker::Compose::Session do
       session.rm
       session.rm 'joebob'
       session.rm force:true,volumes:true
+    end
+  end
+
+  describe '#port' do
+    context 'given a running service' do
+      let(:output) { "0.0.0.0:32769\n" }
+      it 'maps ports' do
+        expect(session.port('svc1', 8080)).to eq('0.0.0.0:32769')
+      end
+    end
+
+    context 'given a stopped service' do
+      let(:output) { "\n" }
+      it 'returns nil' do
+        expect(session.port('svc1', 8080)).to eq(nil)
+      end
     end
   end
 
