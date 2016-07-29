@@ -26,7 +26,7 @@ describe Docker::Compose::Session do
 
   describe '#build' do
     it 'creates images' do
-      expect(shell).to receive(:run).with('docker-compose', 'build', ['alice', 'bob'], {force_rm:false, no_cache:false, pull:false}).once
+      expect(shell).to receive(:run).with('docker-compose', 'build', ['alice', 'bob'], {}).once
       session.build('alice', 'bob')
       expect(shell).to receive(:run).with('docker-compose', 'build', [], {force_rm:true, no_cache:true, pull:true}).once
       session.build(force_rm:true, no_cache:true, pull:true)
@@ -56,17 +56,17 @@ describe Docker::Compose::Session do
 
   describe '#up' do
     it 'runs containers' do
-      expect(shell).to receive(:run).with('docker-compose', 'up', anything, anything)
-      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(d:true), anything)
+      expect(shell).to receive(:run).with('docker-compose', 'up', {}, [])
+      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(d:true,timeout:3), [])
       session.up
-      session.up detached:true
+      session.up detached:true, timeout:3
     end
   end
 
   describe '#rm' do
     it 'removes containers' do
-      expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:false,v:false), [])
-      expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:false,v:false), ['joebob'])
+      expect(shell).to receive(:run).with('docker-compose', 'rm', {}, [])
+      expect(shell).to receive(:run).with('docker-compose', 'rm', {}, ['joebob'])
       expect(shell).to receive(:run).with('docker-compose', 'rm', hash_including(f:true,v:true), [])
       session.rm
       session.rm 'joebob'

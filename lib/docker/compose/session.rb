@@ -17,8 +17,8 @@ module Docker::Compose
   class Session
     attr_reader :dir, :file
 
-    def initialize(shell = Backticks::Runner.new(buffered:[:stderr], interactive: true),
-                   dir:Dir.pwd, file:'docker-compose.yml')
+    def initialize(shell = Backticks::Runner.new(buffered: [:stderr], interactive: true),
+                   dir: Dir.pwd, file: 'docker-compose.yml')
       @shell = shell
       @dir = dir
       @file = file
@@ -45,7 +45,7 @@ module Docker::Compose
       inter = @shell.interactive
       @shell.interactive = false
 
-      lines = run!('ps', q:true).split(/[\r\n]+/)
+      lines = run!('ps', q: true).split(/[\r\n]+/)
       containers = Collection.new
 
       lines.each do |id|
@@ -69,10 +69,12 @@ module Docker::Compose
     # @return [true] always returns true
     # @raise [Error] if command fails
     def up(*services,
-           detached:false, timeout:10, no_build:false, no_deps:false)
-      run!('up',
-           { d: detached, timeout: timeout, no_build: no_build, no_deps: no_deps },
-           services)
+           detached: false, timeout: 10, no_build: false, no_deps: false)
+      o = opts(d: [detached, false],
+               timeout: [timeout, 10],
+               no_build: [no_build, false],
+               no_deps: [no_deps, false])
+      run!('up', o, services)
       true
     end
 
@@ -87,8 +89,9 @@ module Docker::Compose
       run!('pull', *services)
     end
 
-    def rm(*services, force:false, volumes:false)
-      run!('rm', { f: force, v: volumes }, services)
+    def rm(*services, force: false, volumes: false)
+      o = opts(f: [force, false], v: [volumes, false])
+      run!('rm', o, services)
     end
 
     # Idempotently run an arbitrary command with a service container.
@@ -99,18 +102,12 @@ module Docker::Compose
     # @param [Boolean] no_deps if true, just run specified services without
     #   running the services that they depend on
     # @param [Array] env a list of environment variables (see: -e flag)
-    # @param [Array] env_vars DEPRECATED alias for env kwarg
     # @param [Boolean] rm remove the container when done
     # @raise [Error] if command fails
-    def run(service, *cmd, detached:false, no_deps:false, env:[], env_vars:nil, rm:false)
-      # handle deprecated kwarg
-      if (env.nil? || env.empty?) && !env_vars.nil?
-        env = env_vars
-      end
-
+    def run(service, *cmd, detached: false, no_deps: false, env: [], rm: false)
+      o = opts(detached: [detached, false], no_deps: [no_deps, false], env: [env, []], rm: [rm, false])
       env_params = env.map { |v| { e: v } }
-      run!('run',
-           { d: detached, no_deps: no_deps, rm: rm }, *env_params, service, cmd)
+      run!('run', o, *env_params, service, cmd)
     end
 
     # Pause running services.
@@ -129,16 +126,18 @@ module Docker::Compose
     # @param [Array] services list of String service names to stop
     # @param [Integer] timeout how long to wait for each service to stop
     # @raise [Error] if command fails
-    def stop(*services, timeout:10)
-      run!('stop', { timeout: timeout }, services)
+    def stop(*services, timeout: 10)
+      o = opts(timeout: [timeout, 10])
+      run!('stop', o, services)
     end
 
     # Forcibly stop running services.
     # @param [Array] services list of String service names to stop
     # @param [String] name of murderous signal to use, default is 'KILL'
     # @see Signal.list for a list of acceptable signal names
-    def kill(*services, signal:'KILL')
-      run!('kill', { s: signal }, services)
+    def kill(*services, signal: 'KILL')
+      o = opts(signal: [signal, 'KILL'])
+      run!('kill', o, services)
     end
 
     # Figure out which host a port a given service port has been published to.
@@ -147,8 +146,9 @@ module Docker::Compose
     # @param [String] protocol 'tcp' or 'udp'
     # @param [Integer] index of container (if multiple instances running)
     # @raise [Error] if command fails
-    def port(service, port, protocol:'tcp', index:1)
-      run!('port', { protocol: protocol, index: index }, service, port)
+    def port(service, port, protocol: 'tcp', index: 1)
+      o = opts(protocol: [protocol, 'tcp'], index: [index, 1])
+      run!('port', o, service, port)
     end
 
     # Determine the installed version of docker-compose.
@@ -156,8 +156,9 @@ module Docker::Compose
     # @return [String, Hash] if short==true, returns a version string;
     #   otherwise, returns a Hash of component-name strings to version strings
     # @raise [Error] if command fails
-    def version(short:false)
-      result = run!('version', short: short, file: false, dir: false)
+    def version(short: false)
+      o = opts(short: [short, false])
+      result = run!('version', o, file: false, dir: false)
 
       if short
         result.strip
@@ -171,9 +172,11 @@ module Docker::Compose
       end
     end
 
-    def  build(*services, force_rm:false, no_cache:false, pull:false)
-      result = run!('build', services,
-                    force_rm:force_rm, no_cache:no_cache, pull:pull)
+    def build(*services, force_rm: false, no_cache: false, pull: false)
+      o = opts(force_rm: [force_rm, false],
+               no_cache: [no_cache, false],
+               pull: [pull, false])
+      result = run!('build', services, o)
     end
 
     # Run a docker-compose command without validating that the CLI parameters
@@ -187,15 +190,15 @@ module Docker::Compose
     # @raise [Error] if command fails
     def run!(*args)
       file_args = case @file
-        when 'docker-compose.yml'
-          []
-        when Array
-          # backticks sugar can't handle array values; build a list of hashes
-          # IMPORTANT: preserve the order of the files so overrides work correctly
-          file_args = @file.map{ |filepath| {:file => filepath} }
-        else
-          # a single String (or Pathname, etc); use normal sugar to add it
-          [{file: @file.to_s}]
+      when 'docker-compose.yml'
+        []
+      when Array
+        # backticks sugar can't handle array values; build a list of hashes
+        # IMPORTANT: preserve the order of the files so overrides work correctly
+        file_args = @file.map { |filepath| { :file => filepath } }
+      else
+        # a single String (or Pathname, etc); use normal sugar to add it
+        [{ file: @file.to_s }]
       end
 
       Dir.chdir(@dir) do
@@ -211,7 +214,7 @@ module Docker::Compose
     private
 
     def docker_ps(id)
-      cmd = @shell.run('docker', 'ps', a:true, f:"id=#{id}", format:Container::PS_FMT).join
+      cmd = @shell.run('docker', 'ps', a: true, f: "id=#{id}", format: Container::PS_FMT).join
       status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
       raise Error.new('docker ps', status, "Unexpected output") unless status.success?
       lines = out.split(/[\r\n]+/)
@@ -220,6 +223,17 @@ module Docker::Compose
       m = parse(l)
       raise Error.new('docker ps', status, "Cannot parse output: '#{l}'") unless m
       return Container.new(*m)
+    end
+
+    # strip default-values options. the value of each kw should be a pair:
+    #  [0] is present value
+    #  [1] is default value
+    def opts(**kws)
+      res = {}
+      kws.each_pair do |kw, v|
+        res[kw] = v[0] unless v[0] == v[1]
+      end
+      res
     end
 
     # parse values enclosed within parentheses; values may contain nested
