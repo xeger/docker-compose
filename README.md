@@ -1,7 +1,4 @@
-
-
-[![Build Status](https://travis-ci.org/xeger/docker-compose.svg)](https://travis-ci.org/xeger/docker-compose) [![Docs](https://img.shields.io/badge/docs-rubydoc-orange.svg)](http://www.rubydoc.info/gems/docker-compose)
-
+[![Build Status](https://travis-ci.org/xeger/docker-compose.svg)](https://travis-ci.org/xeger/docker-compose) [![Coverage Status](https://coveralls.io/repos/github/xeger/docker-compose/badge.svg?branch=coveralls)](https://coveralls.io/github/xeger/docker-compose?branch=coveralls) [![Docs](https://img.shields.io/badge/docs-rubydoc-blue.svg)](http://www.rubydoc.info/gems/docker-compose)
 
 # Docker::Compose
 
