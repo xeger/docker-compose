@@ -25,23 +25,12 @@ module Docker::Compose
     # Instantiate a mapper; map some environment variables; yield to caller for
     # additional processing.
     #
+    # @param [Hash] env a set of keys/values whose values will be mapped
     # @param [Session] session
     # @param [NetInfo] net_info
     # @yield yields with each substituted (key, value) pair
     def self.map(env, session:Session.new, net_info:NetInfo.new)
-      # TODO: encapsulate this trickiness better ... inside NetInfo perhaps?
-      docker_host = ENV['DOCKER_HOST']
-      if docker_host.nil? || docker_host =~ /^(\/|unix|file)/
-        # If DOCKER_HOST is blank, or pointing to a local socket, then we
-        # can trust the address information returned by `docker-compose port`.
-        override_host = nil
-      else
-        # If DOCKER_HOST is present, assume that containers have bound to
-        # whatever IP we reach it at; don't fall victim to dirty NAT lies!
-        override_host = net_info.docker_routable_ip
-      end
-
-      mapper = new(session, override_host)
+      mapper = new(session, net_info)
       env.each_pair do |k, v|
         begin
           v = mapper.map(v)
@@ -53,10 +42,22 @@ module Docker::Compose
     end
 
     # Create an instance of Mapper
+    #
     # @param [Docker::Compose::Session] session
-    # @param [String] override_host forcible address or DNS hostname to use;
-    #   leave nil to trust docker-compose output.
-    def initialize(session, override_host = nil)
+    # @param [NetInfo] net_info
+    def initialize(session=Session.new, net_info=NetInfo.new)
+      docker_host = ENV['DOCKER_HOST']
+      if docker_host.nil? || docker_host =~ /^(\/|unix|file)/
+        # If DOCKER_HOST is blank, or pointing to a local socket, then we
+        # can trust the address information returned by `docker-compose port`.
+        override_host = nil
+      else
+        # If DOCKER_HOST is present, assume that containers have bound to
+        # whatever IP we reach it at; don't fall victim to docker-compose's
+        # dirty lies!
+        override_host = net_info.docker_routable_ip
+      end
+
       @session = session
       @override_host = override_host
     end

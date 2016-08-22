@@ -73,8 +73,8 @@ module Docker::Compose
         docker_dns = @docker_url.host
         docker_port = @docker_url.port || 2376
       else
-        # Cheap trick: for unix or other protocols, assume docker daemon
-        # is listening on 127.0.0.1:2376
+        # Cheap trick: for unix, file or other protocols, assume docker ports
+        # are proxied to localhost in addition to other interfaces
         docker_dns = 'localhost'
         docker_port = 2376
       end
