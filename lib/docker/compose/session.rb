@@ -156,9 +156,14 @@ module Docker::Compose
     # @return [String,nil] an ip:port pair such as "0.0.0.0:32176" or nil if the service is not running
     # @raise [Error] if command fails
     def port(service, port, protocol: 'tcp', index: 1)
+      inter = @shell.interactive
+      @shell.interactive = false
+
       o = opts(protocol: [protocol, 'tcp'], index: [index, 1])
       s = run!('port', o, service, port).strip
       (!s.empty? && s) || nil
+    ensure
+      @shell.interactive = inter
     end
 
     # Determine the installed version of docker-compose.
