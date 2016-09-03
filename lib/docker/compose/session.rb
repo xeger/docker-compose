@@ -15,7 +15,11 @@ module Docker::Compose
   # allowed by the docker-compose CLI, and that options are sometimes renamed
   # for clarity, e.g. the "-d" flag always becomes the "detached:" kwarg.
   class Session
-    attr_reader :dir, :file
+    # Working directory (determines compose project name); default is Dir.pwd
+    attr_reader :dir
+
+    # Project file; default is 'docker-compose.yml'
+    attr_reader :file
 
     def initialize(shell = Backticks::Runner.new(buffered: [:stderr], interactive: true),
                    dir: Dir.pwd, file: 'docker-compose.yml')
@@ -108,6 +112,11 @@ module Docker::Compose
       o = opts(detached: [detached, false], no_deps: [no_deps, false], env: [env, []], rm: [rm, false])
       env_params = env.map { |v| { e: v } }
       run!('run', o, *env_params, service, cmd)
+    end
+
+    def restart(*services, timeout:10)
+      o = opts(timeout: [timeout, 10])
+      run!('restart', o, *services)
     end
 
     # Pause running services.
@@ -216,14 +225,13 @@ module Docker::Compose
         [{ file: @file.to_s }]
       end
 
-      Dir.chdir(@dir) do
-        cmd = @shell.run('docker-compose', *file_args, *args).join
-        status = cmd.status
-        out = cmd.captured_output
-        err = cmd.captured_error
-        status.success? || fail(Error.new(args.first, status, err))
-        out
-      end
+      @shell.chdir = dir
+      cmd = @shell.run('docker-compose', *file_args, *args).join
+      status = cmd.status
+      out = cmd.captured_output
+      err = cmd.captured_error
+      status.success? || fail(Error.new(args.first, status, out+err))
+      out
     end
 
     private
