@@ -10,7 +10,7 @@ module Docker::Compose
       @status = status
       @detail = detail
 
-      brief = detail.split("\n").first || '(no output)'
+      brief = detail.split(/[\r\n]+/).select { |l| !l.empty? }.first || '(no output)'
 
       case status
       when Numeric

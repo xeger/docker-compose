@@ -100,12 +100,19 @@ module Docker::Compose
     # @raise [NoService] if service is not up or does not publish port
     # @return [Array] (String, Integer) pair of host address and port number
     def host_and_port(service, port)
-      result = @session.port(service, port).chomp
+      result = @session.port(service, port)
+      if result
+        result.chomp!
+      else
+        raise NoService,
+              "Service '#{service}' not running, or does not " \
+              "publish port '#{port}'"
+      end
+
       host, port = result.split(':')
       host = @override_host if @override_host
+
       [host, Integer(port)]
-    rescue RuntimeError, TypeError
-      raise NoService, "Service '#{service}' not running, or does not publish port '#{port}'"
     end
 
     private
