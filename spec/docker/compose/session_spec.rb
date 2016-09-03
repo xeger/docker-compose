@@ -1,5 +1,5 @@
 describe Docker::Compose::Session do
-  let(:shell) { double('shell', interactive: false, 'interactive=': true) }
+  let(:shell) { double('shell', :interactive => false, :"interactive=" => true, :"chdir=" => true) }
   subject(:session) { described_class.new(shell) }
 
   let(:exitstatus) { 0 }
