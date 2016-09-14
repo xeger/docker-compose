@@ -65,17 +65,19 @@ module Docker::Compose
     # @param [Array] services list of String service names to run
     # @param [Boolean] detached if true, to start services in the background;
     #   otherwise, monitor logs in the foreground and shutdown on Ctrl+C
-    # @param [Integer] timeout how long to wait for each service to stostart
-    # @param [Boolean] no_build if true, to skip building images for services
-    #   that have a `build:` instruction in the docker-compose file
+    # @param [Integer] timeout how long to wait for each service to start
+    # @param [Boolean] build if true, build images before starting containers
+    # @param [Boolean] no_build if true, don't build images, even if they're
+    #   missing
     # @param [Boolean] no_deps if true, just run specified services without
     #   running the services that they depend on
     # @return [true] always returns true
     # @raise [Error] if command fails
     def up(*services,
-           detached: false, timeout: 10, no_build: false, no_deps: false)
+           detached: false, timeout: 10, build: false, no_build: false, no_deps: false)
       o = opts(d: [detached, false],
                timeout: [timeout, 10],
+               build: [build, false],
                no_build: [no_build, false],
                no_deps: [no_deps, false])
       run!('up', o, services)
