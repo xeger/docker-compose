@@ -73,8 +73,6 @@ module Docker::Compose
       define
     end
 
-    private
-
     def define
       namespace rake_namespace do
         desc 'Print bash exports with IP/ports of running services'
@@ -105,6 +103,7 @@ module Docker::Compose
         end
       end
     end
+    private :define
 
     # Substitute and set environment variables that point to network ports
     # published by docker-compose services. Optionally also print bash export
@@ -122,6 +121,7 @@ module Docker::Compose
         print_env(k, ENV[k]) if print
       end
     end
+    private :export_env
 
     # Transform a Ruby value into a String that can be stored in the
     # environment. This accepts nil, String, or Array and returns nil, String
@@ -138,6 +138,7 @@ module Docker::Compose
         fail ArgumentError, "Can't represent a #{v.class} in the environment"
       end
     end
+    private :serialize_for_env
 
     # Print an export or unset statement suitable for user's shell
     def print_env(k, v)
@@ -147,6 +148,7 @@ module Docker::Compose
         puts @shell_printer.unset(k)
       end
     end
+    private :print_env
 
     def print_usage
       command = "rake #{rake_namespace}:env"
@@ -154,5 +156,6 @@ module Docker::Compose
       puts @shell_printer.comment('To export these variables to your shell, run:')
       puts @shell_printer.comment(@shell_printer.eval_output(command))
     end
+    private :print_usage
   end
 end
