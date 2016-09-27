@@ -100,7 +100,7 @@ module Docker::Compose
     # @raise [NoService] if service is not up or does not publish port
     # @return [Array] (String, Integer) pair of host address and port number
     def host_and_port(service, port)
-      result = @session.port(service, port)
+      result = @session.port(service, port.to_s)
       if result
         result.chomp!
       else
@@ -114,8 +114,6 @@ module Docker::Compose
 
       [host, Integer(port)]
     end
-
-    private
 
     # Map a single string, replacing service names with IPs and container ports
     # with the host ports that they have been mapped to.
@@ -156,5 +154,6 @@ module Docker::Compose
         fail BadSubstitution, "Can't understand '#{value}'"
       end
     end
+    private :map_scalar
   end
 end
