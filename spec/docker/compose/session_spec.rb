@@ -34,7 +34,8 @@ describe Docker::Compose::Session do
   end
 
   describe '#ps' do
-    let(:hashes) { ['corned_beef', 'sweet_potato', 'afghan_black'] }
+    # hashes is defined in nested contexts.
+    # output is used by command (defined in top context).
     let(:output) { hashes.join("\n") }
 
     # Mock some additional calls to run! that the ps method makes in order
@@ -51,8 +52,23 @@ describe Docker::Compose::Session do
       end
     end
 
-    it 'lists containers' do
-      session.ps
+    context 'given no filter' do
+      let(:hashes) { ['corned_beef', 'sweet_potato', 'afghan_black'] }
+
+      it 'lists containers' do
+        session.ps
+      end
+    end
+
+    context 'given a filter' do
+      let(:hashes) { ['sweet_potato', 'afghan_black'] }
+
+      it 'lists containers' do
+        expect(shell).to receive(:run).with("docker-compose", "ps", hash_including(), "service1", "service2")
+        expect(shell).not_to receive(:run).with('docker', 'ps', hash_including(f:"id=corned_beef"))
+        cont = session.ps('service1', 'service2')
+        expect(cont.size).to eq(2)
+      end
     end
   end
 
