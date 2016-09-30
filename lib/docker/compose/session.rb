@@ -45,11 +45,11 @@ module Docker::Compose
       true
     end
 
-    def ps()
+    def ps(*services)
       inter = @shell.interactive
       @shell.interactive = false
 
-      lines = run!('ps', q: true).split(/[\r\n]+/)
+      lines = run!('ps', {q: true}, services).split(/[\r\n]+/)
       containers = Collection.new
 
       lines.each do |id|
