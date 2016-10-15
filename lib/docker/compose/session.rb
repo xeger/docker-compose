@@ -202,7 +202,7 @@ module Docker::Compose
       o = opts(force_rm: [force_rm, false],
                no_cache: [no_cache, false],
                pull: [pull, false])
-      result = run!('build', services, o)
+      result = run!('build', o, services)
     end
 
     # Run a docker-compose command without validating that the CLI parameters

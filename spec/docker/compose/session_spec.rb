@@ -26,9 +26,9 @@ describe Docker::Compose::Session do
 
   describe '#build' do
     it 'creates images' do
-      expect(shell).to receive(:run).with('docker-compose', 'build', ['alice', 'bob'], {}).once
+      expect(shell).to receive(:run).with('docker-compose', 'build', {}, ['alice', 'bob']).once
       session.build('alice', 'bob')
-      expect(shell).to receive(:run).with('docker-compose', 'build', [], {force_rm:true, no_cache:true, pull:true}).once
+      expect(shell).to receive(:run).with('docker-compose', 'build', {force_rm:true, no_cache:true, pull:true}, []).once
       session.build(force_rm:true, no_cache:true, pull:true)
     end
   end
