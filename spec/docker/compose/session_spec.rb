@@ -3,7 +3,7 @@ describe Docker::Compose::Session do
   subject(:session) { described_class.new(shell) }
 
   let(:exitstatus) { 0 }
-  let(:status) { double('exit status', to_i: exitstatus) }
+  let(:status) { double('exit status', to_s: "pid 12345 exit #{exitstatus}", to_i: exitstatus) }
   let(:output) { '' }
   let(:command) { double('command',
                          status:status,
@@ -93,6 +93,13 @@ describe Docker::Compose::Session do
   end
 
   describe '#port' do
+    context 'given color output' do
+      let(:output) { "\033[37m0.0.0.0:32769\n" }
+      it 'maps ports' do
+        expect(session.port('svc1', 8080)).to eq('0.0.0.0:32769')
+      end
+    end
+
     context 'given a running service' do
       let(:output) { "0.0.0.0:32769\n" }
       it 'maps ports' do

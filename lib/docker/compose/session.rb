@@ -15,6 +15,9 @@ module Docker::Compose
   # allowed by the docker-compose CLI, and that options are sometimes renamed
   # for clarity, e.g. the "-d" flag always becomes the "detached:" kwarg.
   class Session
+    # A Regex that matches all ANSI escape sequences.
+    ANSI = /\033\[([0-9];?)+[a-z]/
+
     # Working directory (determines compose project name); default is Dir.pwd
     attr_reader :dir
 
@@ -53,7 +56,7 @@ module Docker::Compose
       containers = Collection.new
 
       lines.each do |id|
-        containers << docker_ps(id)
+        containers << docker_ps(strip_ansi(id))
       end
 
       containers
@@ -171,7 +174,7 @@ module Docker::Compose
       @shell.interactive = false
 
       o = opts(protocol: [protocol, 'tcp'], index: [index, 1])
-      s = run!('port', o, service, port).strip
+      s = strip_ansi(run!('port', o, service, port).strip)
       (!s.empty? && s) || nil
     ensure
       @shell.interactive = inter
@@ -241,16 +244,17 @@ module Docker::Compose
     def docker_ps(id)
       cmd = @shell.run('docker', 'ps', a: true, f: "id=#{id}", format: Container::PS_FMT).join
       status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
-      raise Error.new('docker ps', status, "Unexpected output") unless status.success?
+      raise Error.new('docker ps', status, out+err) unless status.success?
       lines = out.split(/[\r\n]+/)
       return nil if lines.empty?
-      l = lines.shift
+      l = strip_ansi(lines.shift)
       m = parse(l)
       raise Error.new('docker ps', status, "Cannot parse output: '#{l}'") unless m
+      raise Error.new('docker ps', status, "Cannot parse output: '#{l}'") unless m.size == 7
       return Container.new(*m)
     end
 
-    # strip default-values options. the value of each kw should be a pair:
+    # strip default-valued options. the value of each kw should be a pair:
     #  [0] is present value
     #  [1] is default value
     def opts(**kws)
@@ -259,6 +263,11 @@ module Docker::Compose
         res[kw] = v[0] unless v[0] == v[1]
       end
       res
+    end
+
+    # strip all ANSI escape sequences from str
+    def strip_ansi(str)
+      str.gsub(ANSI, '')
     end
 
     # parse values enclosed within parentheses; values may contain nested
