@@ -87,6 +87,15 @@ module Docker::Compose
       true
     end
 
+    # Idempotently scales the number of containers for given services in the project.
+    # @param [Hash] container_count per service, e.g. {web: 2, worker: 3}
+    # @param [Integer] timeout how long to wait for each service to scale
+    def scale(container_count, timeout: 10)
+      args = container_count.map {|service, count| "#{service}=#{count}"}
+      o = opts(timeout: [timeout, 10])
+      run!('scale', o, *args)
+    end
+
     # Take the stack down
     def down
       run!('down')

@@ -81,6 +81,17 @@ describe Docker::Compose::Session do
     end
   end
 
+  describe '#scale' do
+    it 'scales containers' do
+      expect(shell).to receive(:run).with('docker-compose', 'scale', {}, 'service1=2')
+      expect(shell).to receive(:run).with('docker-compose', 'scale', {}, 'service1=3', 'service2=4')
+      expect(shell).to receive(:run).with('docker-compose', 'scale', { timeout: 3 }, 'service1=1')
+      session.scale(service1: 2)
+      session.scale(service1: 3, service2: 4)
+      session.scale({ service1: 1 }, timeout: 3)
+    end
+  end
+
   describe '#rm' do
     it 'removes containers' do
       expect(shell).to receive(:run).with('docker-compose', 'rm', {}, [])
