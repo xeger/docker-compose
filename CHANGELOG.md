@@ -1,3 +1,16 @@
+1.1
+---
+
+#### New features
+
+Add `scale` command to Session methods.
+
+
+1.0
+---
+
+No significant changes; the 1.0 increment is to indicate that Docker::Compose now has test coverage, and that we intend to maintain a stable API until 2.0.
+
 0.6
 ---
 
