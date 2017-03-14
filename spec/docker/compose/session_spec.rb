@@ -81,6 +81,15 @@ describe Docker::Compose::Session do
     end
   end
 
+  describe '#run' do
+    it 'runs containers' do
+      expect(shell).to receive(:run).with('docker-compose', 'run', {}, 'service1', [])
+      expect(shell).to receive(:run).with('docker-compose', 'run', hash_including(d:true,T:true), 'service1', %w(command command_args))
+      session.run('service1')
+      session.run('service1', 'command', 'command_args', no_tty: true, detached: true)
+    end
+  end
+
   describe '#scale' do
     it 'scales containers' do
       expect(shell).to receive(:run).with('docker-compose', 'scale', {}, 'service1=2')
