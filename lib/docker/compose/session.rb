@@ -122,9 +122,10 @@ module Docker::Compose
     # @param [Array] env a list of environment variables (see: -e flag)
     # @param [Boolean] rm remove the container when done
     # @param [Boolean] no_tty disable pseudo-tty allocation (see: -T flag)
+    # @param [String] user run as specified username or uid (see: -u flag)
     # @raise [Error] if command fails
-    def run(service, *cmd, detached: false, no_deps: false, env: [], rm: false, no_tty: false)
-      o = opts(d: [detached, false], no_deps: [no_deps, false], env: [env, []], rm: [rm, false], T: [no_tty, false])
+    def run(service, *cmd, detached: false, no_deps: false, env: [], rm: false, no_tty: false, user: nil)
+      o = opts(d: [detached, false], no_deps: [no_deps, false], env: [env, []], rm: [rm, false], T: [no_tty, false], u: [user, nil])
       env_params = env.map { |v| { e: v } }
       run!('run', o, *env_params, service, cmd)
     end

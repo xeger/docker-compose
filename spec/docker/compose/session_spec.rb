@@ -85,8 +85,10 @@ describe Docker::Compose::Session do
     it 'runs containers' do
       expect(shell).to receive(:run).with('docker-compose', 'run', {}, 'service1', [])
       expect(shell).to receive(:run).with('docker-compose', 'run', hash_including(d:true,T:true), 'service1', %w(command command_args))
+      expect(shell).to receive(:run).with('docker-compose', 'run', hash_including(u:'user_id:group_id'), 'service1', [])
       session.run('service1')
       session.run('service1', 'command', 'command_args', no_tty: true, detached: true)
+      session.run('service1', user: 'user_id:group_id')
     end
   end
 
