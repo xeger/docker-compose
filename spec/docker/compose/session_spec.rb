@@ -90,6 +90,13 @@ describe Docker::Compose::Session do
       session.run('service1', 'command', 'command_args', no_tty: true, detached: true)
       session.run('service1', user: 'user_id:group_id')
     end
+
+    it 'runs containers with env vars' do
+      expect(shell).to receive(:run).with('docker-compose', 'run', {}, { e:'VAR1=val1' }, 'service1', [])
+      session.run('service1', env: ["VAR1=val1"])
+      expect(shell).to receive(:run).with('docker-compose', 'run', {}, { e:'VAR1=val1' }, { e:'VAR2=val2'}, 'service1', [])
+      session.run('service1', env: ["VAR1=val1", "VAR2=val2"])
+    end
   end
 
   describe '#scale' do
