@@ -141,6 +141,14 @@ describe Docker::Compose::Session do
       it 'returns nil' do
         expect(session.port('svc1', 8080)).to eq(nil)
       end
+
+      context 'and docker-compose v1.11+' do
+        let(:exitstatus) { 1 }
+        let(:output) { "No container found for svc1_1" }
+        it 'returns nil' do
+          expect(session.port('svc1', 8080)).to eq(nil)
+        end
+      end
     end
   end
 

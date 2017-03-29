@@ -187,6 +187,13 @@ module Docker::Compose
       o = opts(protocol: [protocol, 'tcp'], index: [index, 1])
       s = strip_ansi(run!('port', o, service, port).strip)
       (!s.empty? && s) || nil
+    rescue Error => e
+      # Deal with docker-compose v1.11+
+      if e.detail =~ /No container found/i
+        nil
+      else
+        raise
+      end
     ensure
       @shell.interactive = inter
     end
