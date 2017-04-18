@@ -34,7 +34,9 @@ describe Docker::Compose::Session do
   end
 
   describe '#ps' do
-    # hashes is defined in nested contexts.
+    # hashes is overridden in nested contexts.
+    let(:hashes) { ['corned_beef'] }
+
     # output is used by command (defined in top context).
     let(:output) { hashes.join("\n") }
 
@@ -44,12 +46,18 @@ describe Docker::Compose::Session do
       hashes.each do |h|
         cmd = double('command',
                      status:status,
-                     captured_output:"(#{h}) (xeger/#{h}:latest) (1 mb) (Up 1 second) (#{h}) () ()",
+                     captured_output:"(#{h}) (xeger/#{h}:latest) (1.0MB (virtual 7.3MB)) (Up 1 second) (#{h}) () ()",
                      captured_error:'')
         allow(cmd).to receive(:join).and_return(cmd)
         expect(shell).to receive(:run).with('docker', 'ps', hash_including(f:"id=#{h}")).and_return(cmd)
         allow(shell).to receive(:interactive=)
       end
+    end
+
+    it 'reports accurate size' do
+      cont = session.ps()
+      expect(cont).not_to be_empty
+      expect(cont[0].size).to eq(1_048_576)
     end
 
     context 'given no filter' do
@@ -140,14 +148,6 @@ describe Docker::Compose::Session do
       let(:output) { "\n" }
       it 'returns nil' do
         expect(session.port('svc1', 8080)).to eq(nil)
-      end
-
-      context 'and docker-compose v1.11+' do
-        let(:exitstatus) { 1 }
-        let(:output) { "No container found for svc1_1" }
-        it 'returns nil' do
-          expect(session.port('svc1', 8080)).to eq(nil)
-        end
       end
     end
   end

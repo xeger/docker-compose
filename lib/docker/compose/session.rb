@@ -288,8 +288,11 @@ module Docker::Compose
       str.gsub(ANSI, '')
     end
 
-    # parse values enclosed within parentheses; values may contain nested
-    # matching pairs of parentheses
+    # Parse a string that consists of a sequence of values enclosed within parentheses.
+    # Ignore any bytes that are outside of parentheses. Values may include nested parentheses.
+    #
+    # @param [String] str e.g. "(foo) ((bar)) ... (baz)"
+    # @return [Array] e.g. ["foo", "bar", "baz"]
     def parse(str)
       fields = []
       nest = 0
@@ -303,6 +306,7 @@ module Docker::Compose
         else
           if ch == '('
             nest += 1
+            field << ch
           elsif ch == ')'
             nest -= 1
             if nest == 0
