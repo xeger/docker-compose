@@ -35,7 +35,7 @@ module Docker::Compose
     # @return [Hash] the docker-compose config file
     # @raise [Error] if command fails
     def config(*args)
-      config = run!('config', *args)
+      config = strip_ansi(run!('config', *args))
       YAML.load(config)
     end
 
@@ -52,7 +52,7 @@ module Docker::Compose
       inter = @shell.interactive
       @shell.interactive = false
 
-      lines = run!('ps', {q: true}, services).split(/[\r\n]+/)
+      lines = strip_ansi(run!('ps', {q: true}, services)).split(/[\r\n]+/)
       containers = Collection.new
 
       lines.each do |id|
