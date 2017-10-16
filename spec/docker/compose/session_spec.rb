@@ -105,6 +105,13 @@ describe Docker::Compose::Session do
       expect(shell).to receive(:run).with('docker-compose', 'run', {}, { e:'VAR1=val1' }, { e:'VAR2=val2'}, 'service1', [])
       session.run('service1', env: ["VAR1=val1", "VAR2=val2"])
     end
+
+    it 'runs containers with mounted volumes' do
+      expect(shell).to receive(:run).with('docker-compose', 'run', {}, { v:'/host1:/container1' }, 'service1', [])
+      session.run('service1', volumes: ['/host1:/container1'])
+      expect(shell).to receive(:run).with('docker-compose', 'run', {}, { v:'/host1:/container1' }, { v:'/host2:/container2' }, 'service1', [])
+      session.run('service1', volumes: ['/host1:/container1', '/host2:/container2'])
+    end
   end
 
   describe '#scale' do

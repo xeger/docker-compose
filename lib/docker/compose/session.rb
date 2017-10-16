@@ -120,14 +120,16 @@ module Docker::Compose
     # @param [Boolean] no_deps if true, just run specified services without
     #   running the services that they depend on
     # @param [Array] env a list of environment variables (see: -e flag)
+    # @param [Array] volumes a list of volumes to bind mount (see: -v flag)
     # @param [Boolean] rm remove the container when done
     # @param [Boolean] no_tty disable pseudo-tty allocation (see: -T flag)
     # @param [String] user run as specified username or uid (see: -u flag)
     # @raise [Error] if command fails
-    def run(service, *cmd, detached: false, no_deps: false, env: [], rm: false, no_tty: false, user: nil)
+    def run(service, *cmd, detached: false, no_deps: false, volumes: [], env: [], rm: false, no_tty: false, user: nil)
       o = opts(d: [detached, false], no_deps: [no_deps, false], rm: [rm, false], T: [no_tty, false], u: [user, nil])
       env_params = env.map { |v| { e: v } }
-      run!('run', o, *env_params, service, cmd)
+      volume_params = volumes.map { |v| { v: v } }
+      run!('run', o, *env_params, *volume_params, service, cmd)
     end
 
     def restart(*services, timeout:10)
