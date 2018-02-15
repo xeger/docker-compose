@@ -84,8 +84,10 @@ describe Docker::Compose::Session do
     it 'runs containers' do
       expect(shell).to receive(:run).with('docker-compose', 'up', {}, [])
       expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(d:true,timeout:3), [])
+      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(no_start:true), [])
       session.up
       session.up detached:true, timeout:3
+      session.up no_start:true
     end
   end
 
