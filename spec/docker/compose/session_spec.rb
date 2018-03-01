@@ -91,6 +91,15 @@ describe Docker::Compose::Session do
     end
   end
 
+  describe '#down' do
+    it 'brings down containers' do
+      expect(shell).to receive(:run).with('docker-compose', 'down', {})
+      expect(shell).to receive(:run).with('docker-compose', 'down', hash_including(v:true))
+      session.down
+      session.down remove_volumes:true
+    end
+  end
+
   describe '#run' do
     it 'runs containers' do
       expect(shell).to receive(:run).with('docker-compose', 'run', {}, 'service1', [])
