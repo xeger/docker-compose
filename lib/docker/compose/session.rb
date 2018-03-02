@@ -105,8 +105,9 @@ module Docker::Compose
 
     # Pull images of services
     # @param [Array] services list of String service names to pull
-    def pull(*services)
-      run!('pull', *services)
+    def pull(*services, parallel: false, ignore_pull_failures: false)
+      o = opts(ignore_pull_failures: [ignore_pull_failures, false], parallel: [parallel, false])
+      run!('pull', o, *services)
     end
 
     def rm(*services, force: false, volumes: false)
