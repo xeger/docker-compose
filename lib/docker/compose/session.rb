@@ -99,8 +99,8 @@ module Docker::Compose
     end
 
     # Take the stack down
-    def down
-      run!('down')
+    def down(remove_volumes: false)
+      run!('down', opts(v: [!!remove_volumes, false]))
     end
 
     # Pull images of services
