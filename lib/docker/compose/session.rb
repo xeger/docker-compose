@@ -24,11 +24,15 @@ module Docker::Compose
     # Project file; default is 'docker-compose.yml'
     attr_reader :file
 
+    # Reference to the last executed command.
+    attr_reader :last_command
+
     def initialize(shell = Backticks::Runner.new(buffered: [:stderr], interactive: true),
                    dir: Dir.pwd, file: 'docker-compose.yml')
       @shell = shell
       @dir = dir
       @file = file
+      @last_command = nil
     end
 
     # Validate docker-compose file and return it as Hash
@@ -259,10 +263,10 @@ module Docker::Compose
       end
 
       @shell.chdir = dir
-      cmd = @shell.run('docker-compose', *file_args, *args).join
-      status = cmd.status
-      out = cmd.captured_output
-      err = cmd.captured_error
+      @last_command = @shell.run('docker-compose', *file_args, *args).join
+      status = @last_command.status
+      out = @last_command.captured_output
+      err = @last_command.captured_error
       status.success? || fail(Error.new(args.first, status, out+err))
       out
     end
