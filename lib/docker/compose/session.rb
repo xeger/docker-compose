@@ -77,14 +77,20 @@ module Docker::Compose
     # @return [true] always returns true
     # @raise [Error] if command fails
     def up(*services,
-           detached: false, timeout: 10, build: false, no_build: false, no_deps: false,
-           no_start: false)
-      o = opts(d: [detached, false],
+           abort_on_container_exit: false,
+           detached: false, timeout: 10, build: false,
+           exit_code_from: nil,
+           no_build: false, no_deps: false, no_start: false)
+      o = opts(
+               abort_on_container_exit: [abort_on_container_exit, false],
+               d: [detached, false],
                timeout: [timeout, 10],
                build: [build, false],
+               exit_code_from: [exit_code_from, nil],
                no_build: [no_build, false],
                no_deps: [no_deps, false],
-               no_start: [no_start, false])
+               no_start: [no_start, false]
+      )
       run!('up', o, services)
       true
     end

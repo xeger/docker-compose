@@ -85,9 +85,13 @@ describe Docker::Compose::Session do
       expect(shell).to receive(:run).with('docker-compose', 'up', {}, [])
       expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(d:true,timeout:3), [])
       expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(no_start:true), [])
+      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(exit_code_from:'foo'), [])
+      expect(shell).to receive(:run).with('docker-compose', 'up', hash_including(abort_on_container_exit:true), [])
       session.up
       session.up detached:true, timeout:3
       session.up no_start:true
+      session.up exit_code_from:'foo'
+      session.up abort_on_container_exit:true
     end
   end
 
