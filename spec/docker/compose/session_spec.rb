@@ -198,5 +198,12 @@ describe Docker::Compose::Session do
       expect(shell).to receive(:run).with('docker-compose', {file: '/tmp/moo.yml'}, 'foo')
       fancypants.instance_eval { run!('foo') }
     end
+
+    it 'stores the last executed runner command' do
+      fancypants = described_class.new(shell)
+      expect(fancypants.last_command).to be_nil
+      fancypants.instance_eval { run!('foo') }
+      expect(fancypants.last_command).to eq(command)
+    end
   end
 end
