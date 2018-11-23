@@ -127,6 +127,11 @@ describe Docker::Compose::Session do
       expect(shell).to receive(:run).with('docker-compose', 'run', {}, { v:'/host1:/container1' }, { v:'/host2:/container2' }, 'service1', [])
       session.run('service1', volumes: ['/host1:/container1', '/host2:/container2'])
     end
+
+    it 'runs containers with service ports' do
+      expect(shell).to receive(:run).with('docker-compose', 'run', {service_ports: true}, 'service1', %w(command command_args))
+      session.run('service1', 'command', 'command_args', service_ports: true)
+    end
   end
 
   describe '#scale' do

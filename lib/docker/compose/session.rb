@@ -137,8 +137,8 @@ module Docker::Compose
     # @param [Boolean] no_tty disable pseudo-tty allocation (see: -T flag)
     # @param [String] user run as specified username or uid (see: -u flag)
     # @raise [Error] if command fails
-    def run(service, *cmd, detached: false, no_deps: false, volumes: [], env: [], rm: false, no_tty: false, user: nil)
-      o = opts(d: [detached, false], no_deps: [no_deps, false], rm: [rm, false], T: [no_tty, false], u: [user, nil])
+    def run(service, *cmd, detached: false, no_deps: false, volumes: [], env: [], rm: false, no_tty: false, user: nil, service_ports: false)
+      o = opts(d: [detached, false], no_deps: [no_deps, false], rm: [rm, false], T: [no_tty, false], u: [user, nil], service_ports: [service_ports, false])
       env_params = env.map { |v| { e: v } }
       volume_params = volumes.map { |v| { v: v } }
       run!('run', o, *env_params, *volume_params, service, cmd)
