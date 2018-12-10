@@ -49,7 +49,7 @@ describe Docker::Compose::Session do
                      captured_output:"(#{h}) (xeger/#{h}:latest) (1.0MB (virtual 7.3MB)) (Up 1 second) (#{h}) () ()",
                      captured_error:'')
         allow(cmd).to receive(:join).and_return(cmd)
-        expect(shell).to receive(:run).with('docker', 'ps', hash_including(f:"id=#{h}")).and_return(cmd)
+        expect(shell).to receive(:run).with('docker', 'ps', hash_including(f:"id=#{h}",no_trunc:true)).and_return(cmd)
         allow(shell).to receive(:interactive=)
       end
     end
