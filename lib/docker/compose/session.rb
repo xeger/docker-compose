@@ -274,7 +274,7 @@ module Docker::Compose
     private
 
     def docker_ps(id)
-      cmd = @shell.run('docker', 'ps', a: true, f: "id=#{id}", format: Container::PS_FMT).join
+      cmd = @shell.run('docker', 'ps', a: true, f: "id=#{id}", no_trunc: true, format: Container::PS_FMT).join
       status, out, err = cmd.status, cmd.captured_output, cmd.captured_error
       raise Error.new('docker ps', status, out+err) unless status.success?
       lines = out.split(/[\r\n]+/)
