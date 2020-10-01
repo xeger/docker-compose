@@ -17,6 +17,12 @@ describe Docker::Compose::Session do
   end
 
   describe '.new' do
+    it 'allows project_name override' do
+      s1 = described_class.new(shell, project_name: 'test_name')
+      expect(shell).to receive(:run).with('docker-compose', {project_name: 'test_name'}, anything, anything, anything)
+      s1.up
+    end
+
     it 'allows file override' do
       s1 = described_class.new(shell, file: 'foo.yml')
       expect(shell).to receive(:run).with('docker-compose', {file: 'foo.yml'}, anything, anything, anything)
@@ -183,6 +189,12 @@ describe Docker::Compose::Session do
     it 'omits "--file" when possible' do
       fancypants = described_class.new(shell, file:'docker-compose.yml')
       expect(shell).to receive(:run).with('docker-compose', 'foo')
+      fancypants.instance_eval { run!('foo') }
+    end
+
+    it 'handles project_name overrides' do
+      fancypants = described_class.new(shell, project_name:'test_name')
+      expect(shell).to receive(:run).with('docker-compose', {project_name: 'test_name'}, 'foo')
       fancypants.instance_eval { run!('foo') }
     end
 

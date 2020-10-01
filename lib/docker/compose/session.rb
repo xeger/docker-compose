@@ -21,6 +21,9 @@ module Docker::Compose
     # Working directory (determines compose project name); default is Dir.pwd
     attr_reader :dir
 
+    # Project name; default is not to pass a custom name
+    attr_reader :project_name
+
     # Project file; default is 'docker-compose.yml'
     attr_reader :file
 
@@ -28,8 +31,9 @@ module Docker::Compose
     attr_reader :last_command
 
     def initialize(shell = Backticks::Runner.new(buffered: [:stderr], interactive: true),
-                   dir: Dir.pwd, file: 'docker-compose.yml')
+                   dir: Dir.pwd, project_name: nil, file: 'docker-compose.yml')
       @shell = shell
+      @project_name = project_name
       @dir = dir
       @file = file
       @last_command = nil
@@ -250,6 +254,11 @@ module Docker::Compose
     # @return [String] output of the command
     # @raise [Error] if command fails
     def run!(*args)
+      project_name_args = if @project_name
+        [{ project_name: @project_name }]
+      else
+        []
+      end
       file_args = case @file
       when 'docker-compose.yml'
         []
@@ -263,7 +272,7 @@ module Docker::Compose
       end
 
       @shell.chdir = dir
-      @last_command = @shell.run('docker-compose', *file_args, *args).join
+      @last_command = @shell.run('docker-compose', *project_name_args, *file_args, *args).join
       status = @last_command.status
       out = @last_command.captured_output
       err = @last_command.captured_error
