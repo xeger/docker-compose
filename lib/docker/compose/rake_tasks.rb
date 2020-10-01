@@ -85,7 +85,7 @@ module Docker::Compose
           @shell.interactive = false # suppress useless 'port' output
 
           tty = STDOUT.tty?
-          tlt = Rake.application.top_level_tasks.include?('docker:compose:env')
+          tlt = Rake.application.top_level_tasks.include?(task_name('env'))
 
           # user invoked this task directly; print some helpful tips on
           # how we intend it to be used.
@@ -97,7 +97,7 @@ module Docker::Compose
         end
 
         desc 'Run command on host, linked to services in containers'
-        task :host, [:command] => ['docker:compose:env'] do |_task, args|
+        task :host, [:command] => [task_name('env')] do |_task, args|
           if host_services
             @session.up(*host_services, detached: true)
           else
@@ -156,11 +156,16 @@ module Docker::Compose
     private :print_env
 
     def print_usage
-      command = "rake #{rake_namespace}:env"
+      command = "rake #{task_name('env')}"
       command = 'bundle exec ' + command if defined?(Bundler)
       puts @shell_printer.comment('To export these variables to your shell, run:')
       puts @shell_printer.comment(@shell_printer.eval_output(command))
     end
     private :print_usage
+
+    def task_name(task)
+      [rake_namespace, task].join(':')
+    end
+    private :task_name
   end
 end
