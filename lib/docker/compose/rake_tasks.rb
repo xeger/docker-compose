@@ -19,7 +19,7 @@ module Docker::Compose
 
     # Set the project name. Default is not to pass a custom name.
     # @return [String]
-    attr_reader :project_name
+    attr_accessor :project_name
 
     # Set the name of the docker-compose file. Default is`docker-compose.yml`.
     # @return [String]
