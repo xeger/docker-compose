@@ -17,6 +17,10 @@ module Docker::Compose
     # @return [String]
     attr_accessor :dir
 
+    # Set the project name. Default is not to pass a custom name.
+    # @return [String]
+    attr_reader :project_name
+
     # Set the name of the docker-compose file. Default is`docker-compose.yml`.
     # @return [String]
     attr_accessor :file
@@ -57,6 +61,7 @@ module Docker::Compose
     # can be configured by calling #server_env=, #file= and so forth.
     def initialize
       self.dir = Rake.application.original_dir
+      self.project_name = nil
       self.file = 'docker-compose.yml'
       self.host_env = {}
       self.extra_host_env = {}
@@ -64,7 +69,7 @@ module Docker::Compose
       yield self if block_given?
 
       @shell = Backticks::Runner.new
-      @session = Docker::Compose::Session.new(@shell, dir: dir, file: file)
+      @session = Docker::Compose::Session.new(@shell, dir: dir, project_name: project_name, file: file)
       @net_info = Docker::Compose::NetInfo.new
       @shell_printer = Docker::Compose::ShellPrinter.new
 
