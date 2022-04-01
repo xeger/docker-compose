@@ -1,6 +1,6 @@
 # encoding: utf-8
 module Docker
   module Compose
-    VERSION = '1.1.12'
+    VERSION = '1.1.13'
   end
 end
