@@ -18,7 +18,7 @@ jobs:
         with:
           ruby-version: 3.0.0
           bundler-cache: true
-      - name: build
+      - name: version
         run: |
           release='${{ github.event.release.name }}'
           version=`echo $release | cut -b2-`
@@ -26,7 +26,14 @@ jobs:
             echo "Release name must be in the format of 'vX.Y.Z', got '$release'"
             exit 1
           fi
-          sed -i -r "s/VERSION = '.+'/VERSION = '$version'/" lib/docker/compose/version.rb
+          vfiles=($(grep -Elr "^\s*VERSION = '.+'" *))
+          if ${#vfiles[@]} -gt 1; then
+            echo "Found multiple VERSION files: $vfiles"
+            exit 1
+          fi
+          sed -i -r "s/VERSION = '.+'/VERSION = '$version'/" ${vfiles[0]}
+      - name: build
+        run: |
           bundle exec rake build
       - name: push
         run: |
