@@ -11,7 +11,7 @@ to network services exposed by containers. This allows you to run an application
 your host for quicker and easier development, but run all of its dependencies --
 database, cache, adjacent services -- in containers. The dependencies can even run
 on another machine, e.g. a cloud instance or a container cluster, provided your
-development machine has TCP connectivity to every port exposed by a container.  
+development machine has TCP connectivity to every port exposed by a container.
 
 Throughout this documentation we will refer to this gem as `Docker::Compose`
 as opposed to the `docker-compose` tool that this gem wraps.
@@ -101,7 +101,6 @@ db:
     MYSQL_ROOT_PASSWORD: opensesame
   ports:
     - "3306"
-
 ```
 
 Your app needs two inputs, `DATABASE_HOST` and `DATABASE_PORT`. You can specify
@@ -158,12 +157,13 @@ To learn more about mapping, read the class documentation for
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, [create a GitHub release](https://github.com/xeger/docker-compose/releases/new) and the `.gem` file will be automatically uploaded to RubyGems and GitHub Packages.
+
+The automated publication workflow renders `rake release` obsolete, and also makes the committed contents of `version.rb` irrelevant -- the version file is updated on the fly during the publish workflow. As a convention, we leave the committed file set to `X.99.0-dev` to signify a development copy of the gem's source code but preserve major-version compatibility. This facilitates testing of prerelease versions of this gem in other local codebases using the Gemfile `path:` option.
 
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/xeger/docker-compose. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](contributor-covenant.org) code of conduct.
-
 
 ## License
 
