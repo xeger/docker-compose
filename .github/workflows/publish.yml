@@ -1,0 +1,47 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0.0
+          bundler-cache: true
+      - name: build
+        run: |
+          release='${{ github.event.release.name }}'
+          version=`echo $release | cut -b2-`
+          if ! echo $release | grep -q '^v[0-9]\+\.[0-9]\+\.[0-9]\+$'; then
+            echo "Release name must be in the format of 'vX.Y.Z', got '$release'"
+            exit 1
+          fi
+          sed -i -r "s/VERSION = '.+'/VERSION = '$version'/" lib/docker/compose/version.rb
+          bundle exec rake build
+      - name: push
+        run: |
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          cat << EOF > ~/.gem/credentials
+          ---
+          :github: Bearer ${GITHUB_TOKEN}
+          :rubygems_api_key: ${RUBYGEMS_TOKEN}
+          EOF
+
+          gem push --key github --host https://rubygems.pkg.github.com/${OWNER} pkg/*.gem
+          gem push pkg/*.gem
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          OWNER: ${{ github.repository_owner }}
+          RUBYGEMS_TOKEN: "${{ secrets.RUBYGEMS_TOKEN }}"
