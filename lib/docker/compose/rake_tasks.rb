@@ -81,7 +81,7 @@ module Docker::Compose
     def define
       namespace rake_namespace do
         desc 'Print bash exports with IP/ports of running services'
-        task :env do
+        task :env => [task_name('up')] do
           @shell.interactive = false # suppress useless 'port' output
 
           tty = STDOUT.tty?
@@ -97,14 +97,17 @@ module Docker::Compose
         end
 
         desc 'Run command on host, linked to services in containers'
-        task :host, [:command] => [task_name('env')] do |_task, args|
+        task :host, [:command] => [task_name('up')] do |_task, args|
+          exec(args[:command])
+        end
+
+        desc 'bring up services'
+        task :up do
           if host_services
             @session.up(*host_services, detached: true)
           else
             @session.up(detached: true)
           end
-
-          exec(args[:command])
         end
       end
     end
