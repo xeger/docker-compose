@@ -1,5 +1,4 @@
-# coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
+lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'docker/compose/version'
 
@@ -19,11 +18,9 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.0', '< 4.0')
+  spec.required_ruby_version = '~> 3.1'
 
   spec.add_dependency 'backticks', '~> 1.0'
 
-  spec.add_development_dependency 'bundler', '~> 2.3'
-  spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'rspec'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 end
